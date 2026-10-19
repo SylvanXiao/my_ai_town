@@ -1,27 +1,42 @@
+# --- Node / Vite ---
+node_modules/
+dist/
+dist-ssr/
+.vite/
+*.tsbuildinfo
+.eslintcache
+*.local
+
+# --- Rust ---
+# Cargo.lock 入库：host 是二进制。
+target/
+**/*.rs.bk
+
+# --- 本地运行状态 ---
+# 存档、日志、构建产物不入库。.local/ 放研究页的数据与构建、临时存档；
+# 仓库根目录的 .preview.local 这类目录由上面的 *.local 忽略。
+logs/
+/dist-island/
+/dist-research/
+/.local/
+*.log
+
+# --- 密钥 ---
+.env
+.env.*
+!.env.example
+config/credentials.json
+
+# --- 编辑器与工具 ---
 .DS_Store
-/.tmp/
+.idea/
+.vscode/
+.obsidian/
+.wowai/
+/.workbuddy/
+/outputs/
+.claude/settings.local.json
 
-# Local Obsidian workspace settings
-/.obsidian/
-
-# Godot local/editor cache
-game/.godot/
-game/build_info.json
-
-# Local Godot plugins and private resource packs used by the editor/runtime.
-game/addons/
-game/AI资源库/
-game/romestead_weather_free/
-__pycache__/
-
-# 本地发布产物与临时分析文档，不进版本库
-release/
-!/tools/release/
-!/tools/release/**
-/tools/release/__pycache__/
-attack-perf-fixes-*.md
-
-# 本地设计与整理文档默认不进入版本库；手机适配方案作为跨平台约定保留。
-/docs/design/*
-!/docs/design/手机端适配设计.md
-/docs/屎山消灭计划.md
+# --- 本地研究导出 ---
+research/
+mac_portable_research/

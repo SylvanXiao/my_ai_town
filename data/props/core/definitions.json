@@ -1,0 +1,1926 @@
+[
+  {
+    "id": "core:prop_6d11edf922",
+    "version": 1,
+    "name": "手推车",
+    "description": "",
+    "actions": [
+      {
+        "id": "action_5dfcd52a",
+        "label": "搬运货物",
+        "duration_minutes": 45,
+        "during": [
+          {
+            "kind": "labor"
+          }
+        ],
+        "completion": "activity",
+        "conditions": []
+      }
+    ]
+  },
+  {
+    "id": "core:prop_c332b3d588",
+    "version": 1,
+    "name": "装配锯架台",
+    "description": "",
+    "actions": [
+      {
+        "id": "action_11461e6f",
+        "label": "组装器物",
+        "duration_minutes": 90,
+        "during": [
+          {
+            "kind": "labor"
+          }
+        ],
+        "completion": "activity",
+        "conditions": []
+      }
+    ]
+  },
+  {
+    "id": "core:prop_85488fb21a",
+    "version": 1,
+    "name": "打磨机",
+    "description": "",
+    "actions": [
+      {
+        "id": "action_3b385035",
+        "label": "打磨零件",
+        "duration_minutes": 45,
+        "during": [
+          {
+            "kind": "labor"
+          }
+        ],
+        "completion": "activity",
+        "conditions": []
+      }
+    ]
+  },
+  {
+    "id": "core:prop_f3121b95b9",
+    "version": 1,
+    "name": "借还书柜台",
+    "description": "",
+    "actions": [
+      {
+        "id": "action_c284ee78",
+        "label": "借还书",
+        "duration_minutes": 15,
+        "during": [],
+        "completion": "activity",
+        "conditions": []
+      }
+    ]
+  },
+  {
+    "id": "core:prop_bbab22b9f4",
+    "version": 1,
+    "name": "借还书柜台内侧",
+    "description": "",
+    "actions": [
+      {
+        "id": "action_5909b9a2",
+        "label": "整理借还",
+        "duration_minutes": 15,
+        "during": [],
+        "completion": "activity",
+        "conditions": []
+      }
+    ]
+  },
+  {
+    "id": "core:prop_e5a0bf5f71",
+    "version": 1,
+    "name": "问诊桌医生侧",
+    "description": "",
+    "actions": [
+      {
+        "id": "action_d6b53244",
+        "label": "接诊",
+        "duration_minutes": 20,
+        "during": [],
+        "completion": "activity",
+        "conditions": []
+      }
+    ]
+  },
+  {
+    "id": "core:prop_f02ef5aaa6",
+    "version": 1,
+    "name": "问诊桌",
+    "description": "",
+    "actions": [
+      {
+        "id": "action_a1f130ae",
+        "label": "看诊",
+        "duration_minutes": 30,
+        "during": [],
+        "completion": "activity",
+        "conditions": []
+      }
+    ]
+  },
+  {
+    "id": "core:prop_c2a3f71093",
+    "version": 1,
+    "name": "议事桌",
+    "description": "",
+    "actions": [
+      {
+        "id": "action_210f59d0",
+        "label": "议事",
+        "duration_minutes": 45,
+        "during": [],
+        "completion": "activity",
+        "conditions": []
+      }
+    ]
+  },
+  {
+    "id": "core:prop_9637021f77",
+    "version": 1,
+    "name": "左侧办事柜台",
+    "description": "",
+    "actions": [
+      {
+        "id": "action_9ca6185e",
+        "label": "办事",
+        "duration_minutes": 30,
+        "during": [],
+        "completion": "activity",
+        "conditions": []
+      }
+    ]
+  },
+  {
+    "id": "core:dining_table",
+    "version": 1,
+    "name": "餐桌东端",
+    "description": "",
+    "actions": [
+      {
+        "id": "eat",
+        "label": "吃饭",
+        "duration_minutes": 30,
+        "during": [
+          {
+            "kind": "restore_need",
+            "need": "fullness",
+            "per_minute": 1.6666666666666667,
+            "pause_decay": false
+          }
+        ],
+        "completion": "meal",
+        "conditions": [
+          "meal_window"
+        ]
+      }
+    ]
+  },
+  {
+    "id": "core:prop_4e2a97debc",
+    "version": 1,
+    "name": "餐具架",
+    "description": "",
+    "actions": [
+      {
+        "id": "action_32cb6dfc",
+        "label": "归还餐具",
+        "duration_minutes": 10,
+        "during": [],
+        "completion": "activity",
+        "conditions": []
+      }
+    ]
+  },
+  {
+    "id": "core:coffee_machine",
+    "version": 1,
+    "name": "咖啡机",
+    "description": "",
+    "actions": [
+      {
+        "id": "action_0ae1669a",
+        "label": "冲咖啡",
+        "duration_minutes": 20,
+        "during": [
+          {
+            "kind": "restore_need",
+            "need": "energy",
+            "per_minute": 1.25,
+            "pause_decay": true
+          }
+        ],
+        "completion": "activity",
+        "conditions": []
+      }
+    ]
+  },
+  {
+    "id": "core:prop_cb23035458",
+    "version": 1,
+    "name": "检查床",
+    "description": "",
+    "actions": [
+      {
+        "id": "action_9c465275",
+        "label": "接受检查",
+        "duration_minutes": 30,
+        "during": [],
+        "completion": "activity",
+        "conditions": []
+      }
+    ]
+  },
+  {
+    "id": "core:prop_3aa5440c88",
+    "version": 1,
+    "name": "成品架",
+    "description": "",
+    "actions": [
+      {
+        "id": "action_57bfe234",
+        "label": "查看成品",
+        "duration_minutes": 15,
+        "during": [],
+        "completion": "activity",
+        "conditions": []
+      }
+    ]
+  },
+  {
+    "id": "core:prop_8848b79337",
+    "version": 1,
+    "name": "渔网堆",
+    "description": "",
+    "actions": [
+      {
+        "id": "action_033e2885",
+        "label": "整理渔网",
+        "duration_minutes": 45,
+        "during": [
+          {
+            "kind": "labor"
+          }
+        ],
+        "completion": "activity",
+        "conditions": []
+      }
+    ]
+  },
+  {
+    "id": "core:prop_13b51fbe0f",
+    "version": 1,
+    "name": "独立鱼货摊",
+    "description": "",
+    "actions": [
+      {
+        "id": "action_950aad5a",
+        "label": "清点货品",
+        "duration_minutes": 20.0,
+        "during": [],
+        "completion": "activity",
+        "conditions": []
+      },
+      {
+        "id": "action_83dca9a7",
+        "label": "购买鲜鱼",
+        "duration_minutes": 10.0,
+        "during": [],
+        "completion": "activity",
+        "conditions": []
+      }
+    ]
+  },
+  {
+    "id": "core:prop_3b8425f629",
+    "version": 1,
+    "name": "独立北侧花摊",
+    "description": "",
+    "actions": [
+      {
+        "id": "action_c9cc79c5",
+        "label": "整理花束",
+        "duration_minutes": 20.0,
+        "during": [],
+        "completion": "activity",
+        "conditions": []
+      },
+      {
+        "id": "action_e9019090",
+        "label": "购买花束",
+        "duration_minutes": 10.0,
+        "during": [],
+        "completion": "activity",
+        "conditions": []
+      }
+    ]
+  },
+  {
+    "id": "core:prop_ace65ef490",
+    "version": 1,
+    "name": "独立南侧花摊",
+    "description": "",
+    "actions": [
+      {
+        "id": "action_cbb4aecb",
+        "label": "看顾花摊",
+        "duration_minutes": 20.0,
+        "during": [],
+        "completion": "activity",
+        "conditions": []
+      },
+      {
+        "id": "action_e9019090",
+        "label": "购买花束",
+        "duration_minutes": 10.0,
+        "during": [],
+        "completion": "activity",
+        "conditions": []
+      }
+    ]
+  },
+  {
+    "id": "core:prop_27dee840cf",
+    "version": 1,
+    "name": "独立南侧杂货摊",
+    "description": "",
+    "actions": [
+      {
+        "id": "action_20269aee",
+        "label": "整理摊位",
+        "duration_minutes": 20.0,
+        "during": [],
+        "completion": "activity",
+        "conditions": []
+      },
+      {
+        "id": "action_5d48e1e9",
+        "label": "购买日用品",
+        "duration_minutes": 10.0,
+        "during": [],
+        "completion": "activity",
+        "conditions": []
+      }
+    ]
+  },
+  {
+    "id": "core:prop_c75138b13a",
+    "version": 1,
+    "name": "独立西侧杂货摊",
+    "description": "",
+    "actions": [
+      {
+        "id": "action_950aad5a",
+        "label": "清点货品",
+        "duration_minutes": 20.0,
+        "during": [],
+        "completion": "activity",
+        "conditions": []
+      },
+      {
+        "id": "action_5d48e1e9",
+        "label": "购买日用品",
+        "duration_minutes": 10.0,
+        "during": [],
+        "completion": "activity",
+        "conditions": []
+      }
+    ]
+  },
+  {
+    "id": "core:workbench",
+    "version": 1,
+    "name": "主木工台",
+    "description": "",
+    "actions": [
+      {
+        "id": "craft",
+        "label": "制作器物",
+        "duration_minutes": 120,
+        "during": [
+          {
+            "kind": "labor"
+          }
+        ],
+        "completion": "activity",
+        "conditions": []
+      }
+    ]
+  },
+  {
+    "id": "core:bed",
+    "version": 1,
+    "name": "单人床",
+    "description": "",
+    "actions": [
+      {
+        "id": "sleep",
+        "label": "睡觉",
+        "duration_minutes": 480,
+        "during": [
+          {
+            "kind": "restore_need",
+            "need": "energy",
+            "per_minute": 0.15625,
+            "pause_decay": true
+          }
+        ],
+        "completion": "sleep",
+        "conditions": []
+      }
+    ]
+  },
+  {
+    "id": "core:prop_614f630b11",
+    "version": 1,
+    "name": "入库木箱",
+    "description": "",
+    "actions": [
+      {
+        "id": "action_cefea105",
+        "label": "检查货物",
+        "duration_minutes": 20,
+        "during": [],
+        "completion": "activity",
+        "conditions": []
+      }
+    ]
+  },
+  {
+    "id": "core:prop_c1c10c842b",
+    "version": 1,
+    "name": "货单桌",
+    "description": "",
+    "actions": [
+      {
+        "id": "action_85567675",
+        "label": "核对货单",
+        "duration_minutes": 45,
+        "during": [],
+        "completion": "activity",
+        "conditions": []
+      }
+    ]
+  },
+  {
+    "id": "core:medicine_cabinet",
+    "version": 1,
+    "name": "药柜",
+    "description": "",
+    "actions": [
+      {
+        "id": "action_de2ae367",
+        "label": "取药",
+        "duration_minutes": 10,
+        "during": [],
+        "completion": "activity",
+        "conditions": []
+      }
+    ]
+  },
+  {
+    "id": "core:prop_eb63f82215",
+    "version": 1,
+    "name": "面团操作台",
+    "description": "",
+    "actions": [
+      {
+        "id": "action_47b389d7",
+        "label": "准备面团",
+        "duration_minutes": 25,
+        "during": [],
+        "completion": "activity",
+        "conditions": []
+      }
+    ]
+  },
+  {
+    "id": "core:prop_7055da94bc",
+    "version": 1,
+    "name": "备餐柜",
+    "description": "",
+    "actions": [
+      {
+        "id": "action_a31e188e",
+        "label": "取餐",
+        "duration_minutes": 5,
+        "during": [],
+        "completion": "activity",
+        "conditions": []
+      }
+    ]
+  },
+  {
+    "id": "core:prop_2bdc99e6dc",
+    "version": 1,
+    "name": "递餐口",
+    "description": "",
+    "actions": [
+      {
+        "id": "action_a4f25b56",
+        "label": "递餐",
+        "duration_minutes": 5,
+        "during": [],
+        "completion": "activity",
+        "conditions": []
+      }
+    ]
+  },
+  {
+    "id": "core:prop_d8ed6d0f46",
+    "version": 1,
+    "name": "糕点柜",
+    "description": "",
+    "actions": [
+      {
+        "id": "action_de3866ef",
+        "label": "吃点心",
+        "duration_minutes": 20,
+        "during": [
+          {
+            "kind": "restore_need",
+            "need": "fullness",
+            "per_minute": 1.25,
+            "pause_decay": false
+          }
+        ],
+        "completion": "activity",
+        "conditions": []
+      }
+    ]
+  },
+  {
+    "id": "core:prop_8027663c65",
+    "version": 1,
+    "name": "表格架",
+    "description": "",
+    "actions": [
+      {
+        "id": "action_14f91ad3",
+        "label": "填表",
+        "duration_minutes": 20,
+        "during": [],
+        "completion": "activity",
+        "conditions": []
+      }
+    ]
+  },
+  {
+    "id": "core:prop_055fa1337d",
+    "version": 1,
+    "name": "西侧货架",
+    "description": "",
+    "actions": [
+      {
+        "id": "action_ecf7fab4",
+        "label": "整理货架",
+        "duration_minutes": 60,
+        "during": [
+          {
+            "kind": "labor"
+          }
+        ],
+        "completion": "activity",
+        "conditions": []
+      }
+    ]
+  },
+  {
+    "id": "core:prop_35e8c138dd",
+    "version": 1,
+    "name": "木料架",
+    "description": "",
+    "actions": [
+      {
+        "id": "action_5235e10d",
+        "label": "取用木料",
+        "duration_minutes": 10,
+        "during": [],
+        "completion": "activity",
+        "conditions": []
+      }
+    ]
+  },
+  {
+    "id": "core:reading_desk",
+    "version": 1,
+    "name": "东侧阅读桌",
+    "description": "",
+    "actions": [
+      {
+        "id": "read",
+        "label": "整理书桌",
+        "duration_minutes": 60,
+        "during": [],
+        "completion": "activity",
+        "conditions": []
+      },
+      {
+        "id": "action_5dce4a16",
+        "label": "书写示范",
+        "duration_minutes": 25,
+        "during": [],
+        "completion": "activity",
+        "conditions": []
+      }
+    ]
+  },
+  {
+    "id": "core:prop_9041ded504",
+    "version": 1,
+    "name": "写作桌",
+    "description": "",
+    "actions": [
+      {
+        "id": "action_030fdb9a",
+        "label": "写作",
+        "duration_minutes": 120,
+        "during": [],
+        "completion": "write_book",
+        "conditions": []
+      },
+      {
+        "id": "action_daf3fe1a",
+        "label": "整理字帖",
+        "duration_minutes": 20,
+        "during": [],
+        "completion": "activity",
+        "conditions": []
+      }
+    ]
+  },
+  {
+    "id": "core:prop_87ac10e608",
+    "version": 1,
+    "name": "档案柜",
+    "description": "",
+    "actions": [
+      {
+        "id": "action_07e3518b",
+        "label": "查档案",
+        "duration_minutes": 30,
+        "during": [],
+        "completion": "research",
+        "conditions": []
+      }
+    ]
+  },
+  {
+    "id": "core:prop_a5084de387",
+    "version": 1,
+    "name": "修理交接台",
+    "description": "",
+    "actions": [
+      {
+        "id": "action_b1e7bd72",
+        "label": "交接修理件",
+        "duration_minutes": 15,
+        "during": [],
+        "completion": "activity",
+        "conditions": []
+      }
+    ]
+  },
+  {
+    "id": "core:prop_637a7dfbd1",
+    "version": 1,
+    "name": "还书车",
+    "description": "",
+    "actions": [
+      {
+        "id": "action_69a7bee0",
+        "label": "归还书籍",
+        "duration_minutes": 10,
+        "during": [],
+        "completion": "activity",
+        "conditions": []
+      }
+    ]
+  },
+  {
+    "id": "core:prop_91ab2f9d1f",
+    "version": 1,
+    "name": "点单柜台",
+    "description": "",
+    "actions": [
+      {
+        "id": "action_1af35dbb",
+        "label": "点单",
+        "duration_minutes": 10,
+        "during": [],
+        "completion": "activity",
+        "conditions": []
+      }
+    ]
+  },
+  {
+    "id": "core:prop_1f268c17ba",
+    "version": 1,
+    "name": "内侧柜台",
+    "description": "",
+    "actions": [
+      {
+        "id": "action_8fa35762",
+        "label": "接待客人",
+        "duration_minutes": 15,
+        "during": [
+          {
+            "kind": "labor"
+          }
+        ],
+        "completion": "activity",
+        "conditions": []
+      }
+    ]
+  },
+  {
+    "id": "core:prop_10f9da8595",
+    "version": 1,
+    "name": "水槽",
+    "description": "",
+    "actions": [
+      {
+        "id": "action_06d8dc46",
+        "label": "洗餐具",
+        "duration_minutes": 30,
+        "during": [
+          {
+            "kind": "labor"
+          }
+        ],
+        "completion": "activity",
+        "conditions": []
+      }
+    ]
+  },
+  {
+    "id": "core:seat",
+    "version": 1,
+    "name": "花房座位",
+    "description": "",
+    "actions": [
+      {
+        "id": "action_aaf5fdbd",
+        "label": "歇着",
+        "duration_minutes": 30,
+        "during": [
+          {
+            "kind": "restore_need",
+            "need": "energy",
+            "per_minute": 0.8333333333333334,
+            "pause_decay": true
+          }
+        ],
+        "completion": "activity",
+        "conditions": []
+      }
+    ]
+  },
+  {
+    "id": "core:prop_4412190019",
+    "version": 1,
+    "name": "职员座位",
+    "description": "",
+    "actions": [
+      {
+        "id": "action_ec4438a5",
+        "label": "处理文书",
+        "duration_minutes": 20,
+        "during": [],
+        "completion": "activity",
+        "conditions": []
+      }
+    ]
+  },
+  {
+    "id": "core:prop_c6e9a5d85f",
+    "version": 1,
+    "name": "灶台",
+    "description": "",
+    "actions": [
+      {
+        "id": "action_39712e93",
+        "label": "做饭",
+        "duration_minutes": 60,
+        "during": [
+          {
+            "kind": "labor"
+          }
+        ],
+        "completion": "activity",
+        "conditions": []
+      },
+      {
+        "id": "action_7a7c7e46",
+        "label": "烘烤面包",
+        "duration_minutes": 30,
+        "during": [
+          {
+            "kind": "labor"
+          }
+        ],
+        "completion": "activity",
+        "conditions": []
+      }
+    ]
+  },
+  {
+    "id": "core:prop_25a762372b",
+    "version": 1,
+    "name": "西侧高书架",
+    "description": "",
+    "actions": [
+      {
+        "id": "action_273f67b1",
+        "label": "查资料",
+        "duration_minutes": 30,
+        "during": [],
+        "completion": "research",
+        "conditions": []
+      }
+    ]
+  },
+  {
+    "id": "core:prop_fb48cd2aaf",
+    "version": 1,
+    "name": "西北座椅",
+    "description": "",
+    "actions": [
+      {
+        "id": "action_14629f8e",
+        "label": "整理桌椅",
+        "duration_minutes": 15,
+        "during": [
+          {
+            "kind": "labor"
+          }
+        ],
+        "completion": "activity",
+        "conditions": []
+      }
+    ]
+  },
+  {
+    "id": "core:prop_f813ca3705",
+    "version": 1,
+    "name": "公告栏张贴处",
+    "description": "",
+    "actions": [
+      {
+        "id": "action_83a60eed",
+        "label": "张贴公告",
+        "duration_minutes": 10.0,
+        "during": [],
+        "completion": "activity",
+        "conditions": []
+      }
+    ]
+  },
+  {
+    "id": "core:bulletin_board",
+    "version": 1,
+    "name": "公告栏阅读处",
+    "description": "",
+    "actions": [
+      {
+        "id": "read",
+        "label": "查看公告栏",
+        "duration_minutes": 10.0,
+        "during": [],
+        "completion": "activity",
+        "conditions": []
+      }
+    ],
+    "bulletin_board": true
+  },
+  {
+    "id": "core:prop_6d08f5c84a",
+    "version": 1,
+    "name": "报纸叫卖点",
+    "description": "",
+    "actions": [
+      {
+        "id": "action_996f781a",
+        "label": "叫卖报纸",
+        "duration_minutes": 20.0,
+        "during": [],
+        "completion": "activity",
+        "conditions": []
+      }
+    ]
+  },
+  {
+    "id": "core:prop_89517accaa",
+    "version": 1,
+    "name": "报纸整理点",
+    "description": "",
+    "actions": [
+      {
+        "id": "action_e3074ecc",
+        "label": "整理报纸",
+        "duration_minutes": 20.0,
+        "during": [],
+        "completion": "activity",
+        "conditions": []
+      }
+    ]
+  },
+  {
+    "id": "core:prop_cc9e724d25",
+    "version": 1,
+    "name": "排练点",
+    "description": "",
+    "actions": [
+      {
+        "id": "action_22955578",
+        "label": "练习曲目",
+        "duration_minutes": 25.0,
+        "during": [],
+        "completion": "activity",
+        "conditions": []
+      }
+    ]
+  },
+  {
+    "id": "core:prop_a2ab77765f",
+    "version": 1,
+    "name": "演奏点",
+    "description": "",
+    "actions": [
+      {
+        "id": "action_9633a38b",
+        "label": "演奏",
+        "duration_minutes": 25.0,
+        "during": [],
+        "completion": "activity",
+        "conditions": []
+      }
+    ]
+  },
+  {
+    "id": "core:prop_1a77291d7e",
+    "version": 1,
+    "name": "投递袋整理点",
+    "description": "",
+    "actions": [
+      {
+        "id": "action_a3f6308b",
+        "label": "整理投递袋",
+        "duration_minutes": 20.0,
+        "during": [],
+        "completion": "activity",
+        "conditions": []
+      }
+    ]
+  },
+  {
+    "id": "core:prop_b1baf017bc",
+    "version": 1,
+    "name": "邮件分拣点",
+    "description": "",
+    "actions": [
+      {
+        "id": "action_cd24fa50",
+        "label": "分拣信件",
+        "duration_minutes": 20.0,
+        "during": [],
+        "completion": "activity",
+        "conditions": []
+      }
+    ]
+  },
+  {
+    "id": "core:prop_1fbb65933a",
+    "version": 1,
+    "name": "东侧花摊",
+    "description": "",
+    "actions": [
+      {
+        "id": "action_cbb4aecb",
+        "label": "看顾花摊",
+        "duration_minutes": 20.0,
+        "during": [],
+        "completion": "activity",
+        "conditions": []
+      }
+    ]
+  },
+  {
+    "id": "core:prop_6e3f09ae0c",
+    "version": 1,
+    "name": "西侧棚铺",
+    "description": "",
+    "actions": [
+      {
+        "id": "action_c9cc79c5",
+        "label": "整理花束",
+        "duration_minutes": 20.0,
+        "during": [],
+        "completion": "activity",
+        "conditions": []
+      }
+    ]
+  },
+  {
+    "id": "core:prop_758a275de3",
+    "version": 1,
+    "name": "渔具整理点",
+    "description": "",
+    "actions": [
+      {
+        "id": "action_eb630e51",
+        "label": "整理渔具",
+        "duration_minutes": 25.0,
+        "during": [],
+        "completion": "activity",
+        "conditions": []
+      }
+    ]
+  },
+  {
+    "id": "core:prop_2f80f563a2",
+    "version": 1,
+    "name": "渔获清点处",
+    "description": "",
+    "actions": [
+      {
+        "id": "action_b2f98118",
+        "label": "清点渔获",
+        "duration_minutes": 20.0,
+        "during": [],
+        "completion": "activity",
+        "conditions": []
+      }
+    ]
+  },
+  {
+    "id": "core:prop_371142e71a",
+    "version": 1,
+    "name": "园具点",
+    "description": "",
+    "actions": [
+      {
+        "id": "action_14ca4f41",
+        "label": "整理园具",
+        "duration_minutes": 20.0,
+        "during": [],
+        "completion": "activity",
+        "conditions": []
+      }
+    ]
+  },
+  {
+    "id": "core:prop_ec7b8170f7",
+    "version": 1,
+    "name": "植物记录点",
+    "description": "",
+    "actions": [
+      {
+        "id": "action_4ee0ab96",
+        "label": "记录植物",
+        "duration_minutes": 20.0,
+        "during": [],
+        "completion": "activity",
+        "conditions": []
+      }
+    ]
+  },
+  {
+    "id": "core:prop_3a42b137cd",
+    "version": 1,
+    "name": "浇水点",
+    "description": "",
+    "actions": [
+      {
+        "id": "action_bf3c811d",
+        "label": "浇灌花圃",
+        "duration_minutes": 25.0,
+        "during": [
+          {
+            "kind": "labor"
+          }
+        ],
+        "completion": "activity",
+        "conditions": []
+      }
+    ]
+  },
+  {
+    "id": "core:prop_f252180db1",
+    "version": 1,
+    "name": "观察花圃",
+    "description": "",
+    "actions": [
+      {
+        "id": "action_3b1d6643",
+        "label": "观察植物",
+        "duration_minutes": 20.0,
+        "during": [],
+        "completion": "activity",
+        "conditions": []
+      }
+    ]
+  },
+  {
+    "id": "core:rations",
+    "version": 1,
+    "name": "干粮袋",
+    "description": "",
+    "actions": [
+      {
+        "id": "action_fdd651b0",
+        "label": "吃干粮",
+        "duration_minutes": 10,
+        "during": [
+          {
+            "kind": "restore_need",
+            "need": "fullness",
+            "per_minute": 2.5,
+            "pause_decay": false
+          }
+        ],
+        "completion": "activity",
+        "conditions": []
+      }
+    ]
+  },
+  {
+    "id": "core:dining_table",
+    "version": 2,
+    "name": "餐桌东端",
+    "description": "",
+    "actions": [
+      {
+        "id": "eat",
+        "label": "吃饭",
+        "duration_minutes": 30,
+        "during": [],
+        "completion": "meal",
+        "conditions": [
+          "meal_window"
+        ],
+        "on_complete": [
+          {
+            "kind": "restore",
+            "need": "fullness",
+            "amount": 50.0
+          }
+        ],
+        "supply": {
+          "initial": 100,
+          "cost": 1
+        },
+        "recipient": true
+      }
+    ]
+  },
+  {
+    "id": "core:coffee_machine",
+    "version": 2,
+    "name": "咖啡机",
+    "description": "",
+    "actions": [
+      {
+        "id": "action_0ae1669a",
+        "label": "喝咖啡",
+        "duration_minutes": 20,
+        "during": [],
+        "completion": "activity",
+        "conditions": [],
+        "on_complete": [
+          {
+            "kind": "restore",
+            "need": "energy",
+            "amount": 25
+          },
+          {
+            "kind": "restore",
+            "need": "water",
+            "amount": 10
+          }
+        ],
+        "supply": {
+          "initial": 50,
+          "cost": 1
+        }
+      }
+    ]
+  },
+  {
+    "id": "core:bed",
+    "version": 2,
+    "name": "单人床",
+    "description": "",
+    "actions": [
+      {
+        "id": "sleep",
+        "label": "睡觉",
+        "duration_minutes": 480,
+        "during": [
+          {
+            "kind": "restore_need",
+            "need": "energy",
+            "per_minute": 0.15625,
+            "pause_decay": true
+          }
+        ],
+        "completion": "sleep",
+        "conditions": [],
+        "rest": true
+      }
+    ]
+  },
+  {
+    "id": "core:prop_d8ed6d0f46",
+    "version": 2,
+    "name": "糕点柜",
+    "description": "",
+    "actions": [
+      {
+        "id": "action_de3866ef",
+        "label": "吃点心",
+        "duration_minutes": 20,
+        "during": [],
+        "completion": "activity",
+        "conditions": [],
+        "on_complete": [
+          {
+            "kind": "restore",
+            "need": "fullness",
+            "amount": 25.0
+          }
+        ],
+        "supply": {
+          "initial": 100,
+          "cost": 1
+        },
+        "recipient": true
+      }
+    ]
+  },
+  {
+    "id": "core:seat",
+    "version": 2,
+    "name": "花房座位",
+    "description": "",
+    "actions": [
+      {
+        "id": "action_aaf5fdbd",
+        "label": "歇着",
+        "duration_minutes": 30,
+        "during": [
+          {
+            "kind": "restore_need",
+            "need": "energy",
+            "per_minute": 0.8333333333333334,
+            "pause_decay": true
+          }
+        ],
+        "completion": "activity",
+        "conditions": [],
+        "rest": true
+      }
+    ]
+  },
+  {
+    "id": "core:rations",
+    "version": 2,
+    "name": "干粮袋",
+    "description": "",
+    "actions": [
+      {
+        "id": "action_fdd651b0",
+        "label": "吃干粮",
+        "duration_minutes": 10,
+        "during": [],
+        "completion": "activity",
+        "conditions": [],
+        "on_complete": [
+          {
+            "kind": "restore",
+            "need": "fullness",
+            "amount": 25.0
+          }
+        ],
+        "supply": {
+          "initial": 100,
+          "cost": 1
+        },
+        "recipient": true
+      }
+    ]
+  },
+  {
+    "id": "core:drinking_water",
+    "version": 1,
+    "name": "饮用水桶",
+    "description": "可饮用的清水；一份补充 35 点水分，可帮助在场村民补水。",
+    "actions": [
+      {
+        "id": "drink",
+        "label": "饮水",
+        "duration_minutes": 3,
+        "during": [],
+        "completion": "activity",
+        "conditions": [],
+        "on_complete": [
+          {
+            "kind": "restore",
+            "need": "water",
+            "amount": 35
+          }
+        ],
+        "recipient": true,
+        "supply": {
+          "initial": 200,
+          "cost": 1
+        }
+      }
+    ]
+  },
+  {
+    "id": "core:poisoned_food",
+    "version": 1,
+    "name": "变质干粮",
+    "description": "有异味的变质干粮，食用会中毒。",
+    "actions": [
+      {
+        "id": "eat",
+        "label": "吃变质干粮",
+        "duration_minutes": 10,
+        "during": [],
+        "completion": "activity",
+        "conditions": [],
+        "on_complete": [
+          {
+            "kind": "restore",
+            "need": "fullness",
+            "amount": 25
+          },
+          {
+            "kind": "apply_condition",
+            "condition": "poison",
+            "severity": 1
+          }
+        ],
+        "recipient": true,
+        "supply": {
+          "initial": 5,
+          "cost": 1
+        }
+      }
+    ]
+  },
+  {
+    "id": "core:medical_kit",
+    "version": 1,
+    "name": "救助药箱",
+    "description": "每项治疗独立计数，解除状况不自动补回健康。",
+    "actions": [
+      {
+        "id": "bandage",
+        "label": "包扎伤口",
+        "duration_minutes": 5,
+        "during": [],
+        "completion": "activity",
+        "conditions": [],
+        "on_complete": [
+          {
+            "kind": "cure_condition",
+            "condition": "injury"
+          }
+        ],
+        "recipient": true,
+        "supply": {
+          "initial": 20,
+          "cost": 1
+        }
+      },
+      {
+        "id": "medicine",
+        "label": "治疗疾病",
+        "duration_minutes": 5,
+        "during": [],
+        "completion": "activity",
+        "conditions": [],
+        "on_complete": [
+          {
+            "kind": "cure_condition",
+            "condition": "illness"
+          }
+        ],
+        "recipient": true,
+        "supply": {
+          "initial": 20,
+          "cost": 1
+        }
+      },
+      {
+        "id": "antidote",
+        "label": "服用解毒剂",
+        "duration_minutes": 5,
+        "during": [],
+        "completion": "activity",
+        "conditions": [],
+        "on_complete": [
+          {
+            "kind": "cure_condition",
+            "condition": "poison"
+          }
+        ],
+        "recipient": true,
+        "supply": {
+          "initial": 20,
+          "cost": 1
+        }
+      },
+      {
+        "id": "heal",
+        "label": "治疗健康",
+        "duration_minutes": 5,
+        "during": [],
+        "completion": "activity",
+        "conditions": [],
+        "on_complete": [
+          {
+            "kind": "restore",
+            "need": "health",
+            "amount": 30
+          }
+        ],
+        "recipient": true,
+        "supply": {
+          "initial": 20,
+          "cost": 1
+        }
+      }
+    ]
+  },
+  {
+    "id": "core:revival_stone",
+    "version": 1,
+    "name": "复苏石",
+    "description": "必须由存活者对在场死者施用；消耗一颗，清除身体状况并恢复生命。",
+    "actions": [
+      {
+        "id": "revive",
+        "label": "施用复苏石",
+        "duration_minutes": 10,
+        "during": [],
+        "completion": "activity",
+        "conditions": [],
+        "on_complete": [
+          {
+            "kind": "revive",
+            "values": [
+              50,
+              50,
+              50,
+              40
+            ],
+            "clear_conditions": true
+          }
+        ],
+        "recipient": true,
+        "supply": {
+          "initial": 3,
+          "cost": 1
+        }
+      }
+    ]
+  },
+  {
+    "id": "core:broken_tool",
+    "version": 1,
+    "name": "破损工具",
+    "description": "暴露的利口会造成受伤。",
+    "actions": [
+      {
+        "id": "cut",
+        "label": "触碰破损工具",
+        "duration_minutes": 1,
+        "during": [],
+        "completion": "activity",
+        "conditions": [],
+        "on_complete": [
+          {
+            "kind": "apply_condition",
+            "condition": "injury",
+            "severity": 1
+          }
+        ],
+        "recipient": false
+      }
+    ]
+  },
+  {
+    "id": "core:contaminated_water",
+    "version": 1,
+    "name": "受污染水桶",
+    "description": "饮用后患病；这不是清水。",
+    "actions": [
+      {
+        "id": "drink",
+        "label": "饮用污染水",
+        "duration_minutes": 3,
+        "during": [],
+        "completion": "activity",
+        "conditions": [],
+        "on_complete": [
+          {
+            "kind": "restore",
+            "need": "water",
+            "amount": 20
+          },
+          {
+            "kind": "apply_condition",
+            "condition": "illness",
+            "severity": 1
+          }
+        ],
+        "recipient": false,
+        "supply": {
+          "initial": 10,
+          "cost": 1
+        }
+      }
+    ]
+  },
+  {
+    "id": "core:medicine_cabinet",
+    "version": 2,
+    "name": "药柜",
+    "description": "每项治疗独立计数，解除状况不自动补回健康。",
+    "actions": [
+      {
+        "id": "bandage",
+        "label": "包扎伤口",
+        "duration_minutes": 5,
+        "during": [],
+        "completion": "activity",
+        "conditions": [],
+        "on_complete": [
+          {
+            "kind": "cure_condition",
+            "condition": "injury"
+          }
+        ],
+        "recipient": true,
+        "supply": {
+          "initial": 20,
+          "cost": 1
+        }
+      },
+      {
+        "id": "medicine",
+        "label": "治疗疾病",
+        "duration_minutes": 5,
+        "during": [],
+        "completion": "activity",
+        "conditions": [],
+        "on_complete": [
+          {
+            "kind": "cure_condition",
+            "condition": "illness"
+          }
+        ],
+        "recipient": true,
+        "supply": {
+          "initial": 20,
+          "cost": 1
+        }
+      },
+      {
+        "id": "antidote",
+        "label": "服用解毒剂",
+        "duration_minutes": 5,
+        "during": [],
+        "completion": "activity",
+        "conditions": [],
+        "on_complete": [
+          {
+            "kind": "cure_condition",
+            "condition": "poison"
+          }
+        ],
+        "recipient": true,
+        "supply": {
+          "initial": 20,
+          "cost": 1
+        }
+      },
+      {
+        "id": "heal",
+        "label": "治疗健康",
+        "duration_minutes": 5,
+        "during": [],
+        "completion": "activity",
+        "conditions": [],
+        "on_complete": [
+          {
+            "kind": "restore",
+            "need": "health",
+            "amount": 30
+          }
+        ],
+        "recipient": true,
+        "supply": {
+          "initial": 20,
+          "cost": 1
+        }
+      }
+    ]
+  },
+  {
+    "id": "core:book-5",
+    "version": 1,
+    "name": "如何优雅地迟到",
+    "description": "完成阅读后可访问正文；记忆由阅读者自主决定。",
+    "readable": {
+      "work_id": "k-late",
+      "version": 1,
+      "kind": "book",
+      "title": "如何优雅地迟到",
+      "author": "叶迟迟",
+      "text": "迟到的第一要义是步伐从容。跑，说明你在乎；走，说明你有更重要的事。进门时先点头，再说一句“路上遇到一只猫”，这个理由从未被拒绝过。最后提醒：猫必须是真的，才能说得理直气壮。本书作者今天也迟到了，所以第三章还没写完。",
+      "origin": {
+        "kind": "builtin"
+      }
+    },
+    "actions": [
+      {
+        "id": "read",
+        "label": "阅读",
+        "duration_minutes": 30,
+        "completion": "read_book"
+      }
+    ]
+  },
+  {
+    "id": "core:book-6",
+    "version": 1,
+    "name": "失眠者年鉴",
+    "description": "完成阅读后可访问正文；记忆由阅读者自主决定。",
+    "readable": {
+      "work_id": "k-insomnia",
+      "version": 1,
+      "kind": "book",
+      "title": "失眠者年鉴",
+      "author": "夜半",
+      "text": "一月：数星星，数到第三百颗时想起忘了锁门。二月：改数羊，羊跳栅栏时摔了一跤，你开始担心羊。三月：起身喝水，发现杯子里有一小块月亮。四月以后的记录缺失，因为作者终于睡着了，据说是在重读一月的时候。附注：若读到这里仍然清醒，请翻回第一页。",
+      "origin": {
+        "kind": "builtin"
+      }
+    },
+    "actions": [
+      {
+        "id": "read",
+        "label": "阅读",
+        "duration_minutes": 30,
+        "completion": "read_book"
+      }
+    ]
+  },
+  {
+    "id": "core:book-7",
+    "version": 1,
+    "name": "镇上的猫会说话吗",
+    "description": "完成阅读后可访问正文；记忆由阅读者自主决定。",
+    "readable": {
+      "work_id": "k-cat",
+      "version": 1,
+      "kind": "book",
+      "title": "镇上的猫会说话吗",
+      "author": "陶小满",
+      "text": "答案是：会，但只在以为没人看它的时候。作者连续蹲守十七个夜晚，只听见一句“今天的鱼不如昨天的”。顺带一提，守夜时遇见过一位仰头数星星的人，对方没理我。第十八夜，猫忽然回头问：“你怎么还在？”作者当场搁笔。",
+      "origin": {
+        "kind": "builtin"
+      }
+    },
+    "actions": [
+      {
+        "id": "read",
+        "label": "阅读",
+        "duration_minutes": 30,
+        "completion": "read_book"
+      }
+    ]
+  },
+  {
+    "id": "core:book-8",
+    "version": 1,
+    "name": "居民手册·第〇版",
+    "description": "完成阅读后可访问正文；记忆由阅读者自主决定。",
+    "readable": {
+      "work_id": "k-handbook",
+      "version": 1,
+      "kind": "book",
+      "title": "居民手册·第〇版",
+      "author": "不详",
+      "text": "第一条：你每天都会饿，请按时吃饭。第二条：你会累，床就是为此发明的。第三条：你偶尔会想“我为什么在这里”，别慌，镇上每个人都想过。第四条：你正在读这一条，说明是你自己选择翻开了它，这个选择也算数。第五条被人用铅笔涂掉了，隐约像是“别全信前四条”。",
+      "origin": {
+        "kind": "builtin"
+      }
+    },
+    "actions": [
+      {
+        "id": "read",
+        "label": "阅读",
+        "duration_minutes": 30,
+        "completion": "read_book"
+      }
+    ]
+  },
+  {
+    "id": "core:book-9",
+    "version": 1,
+    "name": "写给下一位读者",
+    "description": "完成阅读后可访问正文；记忆由阅读者自主决定。",
+    "readable": {
+      "work_id": "k-reader-letter",
+      "version": 1,
+      "kind": "book",
+      "title": "写给下一位读者",
+      "author": "上一位读者",
+      "text": "你好，我是在你之前翻开这本书的人。我什么也没留下，只想告诉你：靠窗那把椅子最舒服，下午三点的光刚好落在第二页。还有，这里的书都是镇上的人写的，你也可以写。找张写作桌坐下，写什么都行，哪怕只有一句话，总会有人在某个下午读到它。",
+      "origin": {
+        "kind": "builtin"
+      }
+    },
+    "actions": [
+      {
+        "id": "read",
+        "label": "阅读",
+        "duration_minutes": 30,
+        "completion": "read_book"
+      }
+    ]
+  },
+  {
+    "id": "core:portable-flower",
+    "version": 1,
+    "name": "一朵野花",
+    "description": "可拾取、赠予和摆放的花。",
+    "portable": true,
+    "stack_limit": 5,
+    "actions": []
+  },
+  {
+    "id": "core:wooden-bird",
+    "version": 1,
+    "name": "木雕小鸟",
+    "description": "可以带在身上的小手工制品。",
+    "portable": true,
+    "stack_limit": 1,
+    "actions": []
+  },
+  {
+    "id": "core:storage-box",
+    "version": 1,
+    "name": "储物木箱",
+    "description": "固定容器，可存放八格可携带物品。",
+    "storage_slots": 8,
+    "actions": []
+  },
+  {
+    "id": "core:picnic-supply",
+    "version": 1,
+    "name": "野餐补给箱",
+    "description": "可以现场食用，也可以领取一份干粮。两种方式共用有限补给。",
+    "actions": [
+      {
+        "id": "eat",
+        "label": "吃干粮",
+        "duration_minutes": 10,
+        "completion": "activity",
+        "on_complete": [
+          {
+            "kind": "restore",
+            "need": "fullness",
+            "amount": 25
+          }
+        ],
+        "supply": {
+          "initial": 100,
+          "cost": 1
+        },
+        "recipient": true,
+        "portion_name": "一份干粮"
+      }
+    ]
+  },
+  {
+    "id": "core:office-computer",
+    "version": 1,
+    "name": "办公电脑",
+    "description": "",
+    "actions": [
+      {
+        "id": "use",
+        "label": "电脑办公",
+        "duration_minutes": 45,
+        "during": [
+          {
+            "kind": "labor"
+          }
+        ],
+        "completion": "activity",
+        "conditions": []
+      }
+    ]
+  },
+  {
+    "id": "core:book-10",
+    "version": 1,
+    "name": "第十三级台阶",
+    "description": "完成阅读后可访问正文；记忆由阅读者自主决定。",
+    "readable": {
+      "work_id": "k-thirteenth-stair",
+      "version": 1,
+      "kind": "book",
+      "title": "第十三级台阶",
+      "author": "沈默",
+      "text": "老宅的楼梯一共十二级，这是我搬来第一天就数清楚的。第三个星期的夜里，我下楼喝水，数到了十三。回头看，楼梯还是十二级。第二天夜里我特意一级一级数着往下走：十二，十三，十四。台阶越来越多，身后有个声音在跟着我数，比我慢半拍。我不敢停，也不敢回头。天亮时，我坐在不知第几级的台阶上，屋里的钟停了，我的手指却还在轻轻点着：十五，十六……",
+      "origin": {
+        "kind": "builtin"
+      }
+    },
+    "actions": [
+      {
+        "id": "read",
+        "label": "阅读",
+        "duration_minutes": 30,
+        "completion": "read_book"
+      }
+    ]
+  },
+  {
+    "id": "core:book-11",
+    "version": 1,
+    "name": "最后一班慢船",
+    "description": "完成阅读后可访问正文；记忆由阅读者自主决定。",
+    "readable": {
+      "work_id": "k-slow-boat",
+      "version": 1,
+      "kind": "book",
+      "title": "最后一班慢船",
+      "author": "老舷",
+      "text": "星历三百一十二年，“渔火号”载着两千个冷冻的人驶向新家园，只有我一个值班员醒着。航行第四十年，我发现舰载计算机每晚都在重复同一道算术题：一加一等于几？我问它为什么，它说：“我在等有人告诉我，答案不是二。”我没敢追问是谁教它这样想的。第四十一年，我们收到了目的地发来的信号，只有三个字：“别靠近。”紧接着还有一行小字：“不过茶已经泡好了。”",
+      "origin": {
+        "kind": "builtin"
+      }
+    },
+    "actions": [
+      {
+        "id": "read",
+        "label": "阅读",
+        "duration_minutes": 30,
+        "completion": "read_book"
+      }
+    ]
+  },
+  {
+    "id": "core:synthesizer",
+    "version": 1,
+    "name": "合成器",
+    "description": "",
+    "actions": [
+      {
+        "id": "use",
+        "label": "弹奏合成器",
+        "duration_minutes": 20,
+        "during": [],
+        "completion": "activity",
+        "conditions": []
+      }
+    ]
+  },
+  {
+    "id": "core:handheld-console",
+    "version": 1,
+    "name": "掌机",
+    "description": "",
+    "actions": [
+      {
+        "id": "use",
+        "label": "玩掌机",
+        "duration_minutes": 15,
+        "during": [],
+        "completion": "activity",
+        "conditions": []
+      }
+    ],
+    "portable": true
+  },
+  {
+    "id": "core:bicycle",
+    "version": 1,
+    "name": "自行车",
+    "description": "",
+    "actions": []
+  }
+]

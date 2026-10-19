@@ -1,0 +1,20 @@
+[
+  {
+    "map": "2d-town",
+    "previous": "b4cf82c9357d9df8",
+    "current": "physiology-v1:6c1710c945f26c19",
+    "legacy_prefix_hash": "6e569f5b8a9bddb5"
+  },
+  {
+    "map": "reference-island",
+    "previous": "7dd1a23ecc482f29",
+    "current": "physiology-v1:9517978246f48731",
+    "legacy_prefix_hash": "dfe476db22203b06"
+  },
+  {
+    "map": "town-layout-3d",
+    "previous": "b4cf82c9357d9df8",
+    "current": "physiology-v1:479a3501c7ff1633",
+    "legacy_prefix_hash": "6e569f5b8a9bddb5"
+  }
+]

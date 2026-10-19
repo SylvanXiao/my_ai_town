@@ -1,0 +1,240 @@
+{
+  "version": 2,
+  "templates": [
+    {
+      "kind": "area",
+      "name": "活动区域",
+      "outdoor": true,
+      "contour": "plaza",
+      "props": [
+        "core:bed@2",
+        "core:rations@2",
+        "core:drinking_water@1"
+      ]
+    },
+    {
+      "kind": "home",
+      "name": "住宅",
+      "outdoor": false,
+      "props": [
+        "core:bed@2",
+        "core:rations@2",
+        "core:drinking_water@1"
+      ]
+    },
+    {
+      "kind": "townhall",
+      "name": "花庭镇公所",
+      "outdoor": false,
+      "props": [
+        "core:prop_c2a3f71093@1",
+        "core:prop_9637021f77@1",
+        "core:prop_8027663c65@1",
+        "core:prop_87ac10e608@1",
+        "core:prop_4412190019@1"
+      ]
+    },
+    {
+      "kind": "warehouse",
+      "name": "港口货栈",
+      "outdoor": false,
+      "props": [
+        "core:prop_6d11edf922@1",
+        "core:prop_614f630b11@1",
+        "core:prop_c1c10c842b@1",
+        "core:prop_055fa1337d@1"
+      ]
+    },
+    {
+      "kind": "plaza",
+      "name": "广场",
+      "outdoor": true,
+      "props": [
+        "core:bulletin_board@1",
+        "core:seat@2"
+      ]
+    },
+    {
+      "kind": "library",
+      "name": "图书馆",
+      "outdoor": false,
+      "props": [
+        "core:reading_desk@1",
+        "core:prop_9041ded504@1",
+        "core:book-5@1",
+        "core:book-6@1",
+        "core:book-7@1",
+        "core:book-8@1",
+        "core:book-9@1",
+        "core:book-10@1",
+        "core:book-11@1"
+      ]
+    },
+    {
+      "kind": "canteen",
+      "name": "食堂",
+      "outdoor": false,
+      "props": [
+        "core:dining_table@2",
+        "core:rations@2",
+        "core:drinking_water@1"
+      ]
+    },
+    {
+      "kind": "clinic",
+      "name": "诊所",
+      "outdoor": false,
+      "props": [
+        "core:medicine_cabinet@2",
+        "core:medical_kit@1",
+        "core:revival_stone@1",
+        "core:bed@2"
+      ]
+    },
+    {
+      "kind": "workshop",
+      "name": "工作坊",
+      "outdoor": false,
+      "props": [
+        "core:workbench@1",
+        "core:prop_85488fb21a@1"
+      ]
+    },
+    {
+      "kind": "cafe",
+      "name": "咖啡馆",
+      "outdoor": false,
+      "props": [
+        "core:coffee_machine@2",
+        "core:seat@2",
+        "core:rations@2",
+        "core:drinking_water@1"
+      ]
+    },
+    {
+      "kind": "garden",
+      "name": "花园",
+      "outdoor": true,
+      "props": [
+        "core:prop_371142e71a@1",
+        "core:prop_3a42b137cd@1"
+      ]
+    },
+    {
+      "kind": "park",
+      "name": "公园",
+      "outdoor": true,
+      "props": [
+        "core:seat@2",
+        "core:drinking_water@1"
+      ]
+    },
+    {
+      "kind": "market",
+      "name": "市场",
+      "outdoor": true,
+      "props": [
+        "core:prop_13b51fbe0f@1",
+        "core:prop_3b8425f629@1",
+        "core:rations@2"
+      ]
+    },
+    {
+      "kind": "harbor",
+      "name": "港口",
+      "outdoor": true,
+      "props": [
+        "core:prop_8848b79337@1",
+        "core:prop_758a275de3@1"
+      ]
+    },
+    {
+      "kind": "inn",
+      "name": "院角旅舍",
+      "outdoor": false,
+      "props": [
+        "core:bed@2"
+      ]
+    },
+    {
+      "kind": "club",
+      "name": "花园社交俱乐部",
+      "outdoor": false,
+      "props": [
+        "core:seat@2"
+      ]
+    },
+    {
+      "kind": "theatre",
+      "name": "曲顶剧院",
+      "outdoor": false,
+      "props": [
+        "core:seat@2"
+      ]
+    },
+    {
+      "kind": "hotel",
+      "name": "花园酒店",
+      "outdoor": false,
+      "props": [
+        "core:bed@2"
+      ]
+    },
+    {
+      "kind": "colonnade",
+      "name": "花园柱廊图书馆",
+      "outdoor": false,
+      "props": [
+        "core:reading_desk@1"
+      ]
+    },
+    {
+      "kind": "court",
+      "name": "开敞弧形阶台",
+      "outdoor": true,
+      "props": [],
+      "contour": "plaza"
+    },
+    {
+      "kind": "temple",
+      "name": "古典神庙遗迹",
+      "outdoor": true,
+      "props": [],
+      "contour": "plaza"
+    },
+    {
+      "kind": "lighthouse",
+      "name": "海塔",
+      "outdoor": false,
+      "props": []
+    },
+    {
+      "kind": "ferris",
+      "name": "摩天轮",
+      "outdoor": true,
+      "props": [],
+      "contour": "plaza"
+    },
+    {
+      "kind": "carousel",
+      "name": "旋转亭",
+      "outdoor": true,
+      "props": [],
+      "contour": "plaza"
+    },
+    {
+      "kind": "obelisk",
+      "name": "纪念方尖碑",
+      "outdoor": true,
+      "props": [],
+      "contour": "plaza"
+    },
+    {
+      "kind": "fountain",
+      "name": "雕塑喷泉",
+      "outdoor": true,
+      "props": [],
+      "contour": "plaza"
+    }
+  ]
+}

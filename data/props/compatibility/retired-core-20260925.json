@@ -1,0 +1,127 @@
+[
+  {
+    "id": "core:book-4",
+    "version": 1,
+    "name": "旅人的手记",
+    "description": "完成阅读后可访问正文；记忆由阅读者自主决定。",
+    "readable": {
+      "work_id": "k-mtq2dkrl-5lcu",
+      "version": 1,
+      "kind": "book",
+      "title": "旅人的手记",
+      "author": "佚名",
+      "text": "旅人沿着河岸来到小镇，记下了桥边的风声、午后的集市和夜里亮着灯的窗。",
+      "origin": {
+        "kind": "builtin"
+      }
+    },
+    "actions": [
+      {
+        "id": "read",
+        "label": "阅读",
+        "duration_minutes": 30,
+        "completion": "read_book"
+      }
+    ]
+  },
+  {
+    "id": "core:bulletin-1",
+    "version": 1,
+    "name": "小镇公告",
+    "description": "完成阅读后可访问正文；记忆由阅读者自主决定。",
+    "readable": {
+      "work_id": "b-mtqwrssd-ybf1",
+      "version": 1,
+      "kind": "bulletin",
+      "title": "小镇公告",
+      "author": "佚名",
+      "text": "欢迎来到小镇。请照顾好自己，也欢迎认识邻居，一起把这里变成温暖的家。",
+      "origin": {
+        "kind": "builtin"
+      }
+    },
+    "actions": [
+      {
+        "id": "read",
+        "label": "阅读公告",
+        "duration_minutes": 30,
+        "completion": "read_bulletin"
+      }
+    ]
+  },
+  {
+    "id": "core:book-1",
+    "version": 1,
+    "name": "木工入门",
+    "description": "完成阅读后可访问正文；记忆由阅读者自主决定。",
+    "readable": {
+      "work_id": "k-joinery",
+      "version": 1,
+      "kind": "book",
+      "title": "木工入门",
+      "author": "佚名",
+      "text": "榫卯有三种常见接法，打磨要顺着木纹，逆纹会起毛。",
+      "origin": {
+        "kind": "builtin"
+      }
+    },
+    "actions": [
+      {
+        "id": "read",
+        "label": "阅读",
+        "duration_minutes": 30,
+        "completion": "read_book"
+      }
+    ]
+  },
+  {
+    "id": "core:book-2",
+    "version": 1,
+    "name": "小镇志",
+    "description": "完成阅读后可访问正文；记忆由阅读者自主决定。",
+    "readable": {
+      "work_id": "k-town-history",
+      "version": 1,
+      "kind": "book",
+      "title": "小镇志",
+      "author": "佚名",
+      "text": "镇子建在山坳尽头，靠渔港和木料起家，公告栏从建镇起就在广场上。",
+      "origin": {
+        "kind": "builtin"
+      }
+    },
+    "actions": [
+      {
+        "id": "read",
+        "label": "阅读",
+        "duration_minutes": 30,
+        "completion": "read_book"
+      }
+    ]
+  },
+  {
+    "id": "core:book-3",
+    "version": 1,
+    "name": "潮汐表",
+    "description": "完成阅读后可访问正文；记忆由阅读者自主决定。",
+    "readable": {
+      "work_id": "k-tides",
+      "version": 1,
+      "kind": "book",
+      "title": "潮汐表",
+      "author": "佚名",
+      "text": "渔港的船清早随涨潮出，午后退潮回，仓库在退潮后最忙。",
+      "origin": {
+        "kind": "builtin"
+      }
+    },
+    "actions": [
+      {
+        "id": "read",
+        "label": "阅读",
+        "duration_minutes": 30,
+        "completion": "read_book"
+      }
+    ]
+  }
+]
