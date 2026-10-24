@@ -345,6 +345,185 @@ fn invitation_reply_repairs_format_without_assuming_consent() {
     assert!(r.session("r1").unwrap().invitation_reply_failure.is_none());
 }
 
+#[test]
+fn invalid_chat_id_reports_the_real_id_without_sending_the_rejected_message() {
+    let mut w = world();
+    let mut r = runtime(&mut w, Limits::default());
+    w.spawn("r2", "小禾", "loc_a").unwrap();
+    w.enable_agent("r2").unwrap();
+    command(
+        &mut w,
+        "r1",
+        "real-chat",
+        Command::Offer {
+            partner_id: "r2".into(),
+            interaction: InteractionKind::Talk,
+            message: "聊聊？".into(),
+        },
+    );
+    command(
+        &mut w,
+        "r2",
+        "accept",
+        Command::Reply {
+            interaction_id: "real-chat".into(),
+            accept: true,
+            message: "好".into(),
+        },
+    );
+    let q = request(&mut r, &mut w);
+    assert_eq!(q.stamp.kind, protocol::RequestKind::Chat);
+    let before = serde_json::to_value(w.snapshot()).unwrap();
+    // 只发工具调用，不带 support::reply 默认自述；自述会合法写入世界日记。
+    assert!(reply_with(
+        &mut r,
+        &mut w,
+        &q,
+        "",
+        vec![tool_call(
+            "wrong-chat-id",
+            "interact",
+            json!({"operation":"say","interaction_id":"chat.id","message":"今天一起散步吧。"}),
+        )],
+    ));
+    assert_eq!(before, serde_json::to_value(w.snapshot()).unwrap());
+    assert!(w.chat_turn("r1"));
+    let retry = request(&mut r, &mut w);
+    assert!(retry.messages.iter().any(|m| {
+        m.role == Role::Tool
+            && serde_json::from_str::<serde_json::Value>(&m.content)
+                .is_ok_and(|v| v["error_kind"] == "world")
+            && m.content.contains("real-chat")
+    }));
+    // 本地结构化交谈必须显式 say/listen/leave，不能把心声中的告辞当成离场。
+    let empty_reply = json!({"choices":[{"finish_reason":"stop","message":{"content":
+        json!({"thought":"我这就去散步。","calls":[]}).to_string()
+    }}]});
+    assert!(agent::completion::parse_local_tool_reply(&empty_reply, &retry).is_err());
+    assert!(w.chat_turn("r1"));
+    let corrected = agent::completion::parse_local_tool_reply(
+        &json!({"choices":[{"finish_reason":"stop","message":{"role":"assistant","content":
+            json!({"thought":"","calls":[{"name":"interact","arguments":{
+                "operation":"say","interaction_id":"real-chat","message":"今天一起散步吧。"
+            }}]}).to_string()
+        }}]}),
+        &retry,
+    )
+    .unwrap();
+    assert!(r.on_reply(
+        &mut w,
+        &retry.actor_id,
+        retry.stamp.id,
+        retry.stamp.epoch,
+        Ok(corrected),
+        1,
+    ));
+    assert!(w.chat_turn("r2"));
+    let chat = w.active_chat("r1").unwrap().chat.as_ref().unwrap();
+    assert_eq!(chat.entries.last().unwrap().text, "今天一起散步吧。");
+
+    // 下一轮只追加变化，末尾观察不再重复 chat.id；本地提示仍须从本场完整状态取编号。
+    command(
+        &mut w,
+        "r2",
+        "partner-follow-up",
+        Command::Say {
+            interaction_id: "real-chat".into(),
+            message: "好，散步时再聊。".into(),
+            to: None,
+        },
+    );
+    let next = request(&mut r, &mut w);
+    let latest_user = next
+        .messages
+        .iter()
+        .rev()
+        .find(|m| m.role == Role::User)
+        .unwrap();
+    let delta: serde_json::Value = serde_json::from_str(&latest_user.content).unwrap();
+    assert!(delta["chat"].get("id").is_none());
+    assert!(delta["chat"]["new_entries"].is_array());
+    let original = serde_json::to_value(&next).unwrap();
+    let shared = agent::completion::tool_request_body(&next, "qwen3.5:2b");
+    let local = agent::completion::local_tool_request_body(&next, "qwen3.5:2b");
+    let local_system = local["messages"][0]["content"].as_str().unwrap();
+    assert!(local_system.contains(r#"{"interaction_id":"real-chat"}"#));
+    assert_eq!(
+        local["response_format"]["json_schema"]["schema"]["properties"]["calls"]["minItems"],
+        1
+    );
+    let tail = local["messages"].as_array().unwrap().last().unwrap();
+    let current: serde_json::Value =
+        serde_json::from_str(tail["content"].as_str().unwrap()).unwrap();
+    assert_eq!(current["decision_state"]["chat"]["id"], "real-chat");
+    assert_eq!(current["decision_state"]["chat"]["turn"], "r1");
+    assert_eq!(
+        current["decision_state"]["chat"]["lines"],
+        delta["chat"]["lines"]
+    );
+    assert!(current["decision_state"]["chat"].get("entries").is_none());
+    assert!(current["decision_state"]["needs"].is_array());
+    let chat_calls = local["response_format"]["json_schema"]["schema"]["properties"]["calls"]
+        ["items"]["anyOf"]
+        .as_array()
+        .unwrap();
+    assert_eq!(chat_calls.len(), 1);
+    assert_eq!(chat_calls[0]["properties"]["name"]["const"], "interact");
+    let operations = chat_calls[0]["properties"]["arguments"]["anyOf"]
+        .as_array()
+        .unwrap();
+    assert_eq!(operations.len(), 3);
+    for operation in operations {
+        assert_eq!(operation["additionalProperties"], false);
+        assert_eq!(
+            operation["properties"]["interaction_id"]["const"],
+            "real-chat"
+        );
+        let required = operation["required"].as_array().unwrap();
+        assert!(required.contains(&json!("operation")));
+        assert!(required.contains(&json!("interaction_id")));
+        if operation["properties"]["operation"]["const"] == "say" {
+            assert!(required.contains(&json!("message")));
+        }
+    }
+    assert!(local.get("tools").is_none());
+    // 转换只发生在本地传输副本，原请求、存档历史和公共工具协议不被改写。
+    assert_eq!(serde_json::to_value(&next).unwrap(), original);
+    assert_eq!(
+        agent::completion::tool_request_body(&next, "qwen3.5:2b"),
+        shared
+    );
+
+    // 从真实阅读经历触发整理，整理请求不应收到移动或聊天的指导。
+    let (mut reflection_world, mut reflection_runtime) = prepared();
+    let reflection = request(&mut reflection_runtime, &mut reflection_world);
+    assert_eq!(reflection.stamp.kind, protocol::RequestKind::Reflection);
+    let reflection_local = agent::completion::local_tool_request_body(&reflection, "qwen3.5:2b");
+    assert_eq!(
+        reflection_local["response_format"]["json_schema"]["schema"]["properties"]["calls"]
+            ["minItems"],
+        0
+    );
+    assert!(
+        agent::completion::parse_local_tool_reply(&empty_reply, &reflection)
+            .unwrap()
+            .calls
+            .is_empty()
+    );
+    let reflection_calls = reflection_local["response_format"]["json_schema"]["schema"]
+        ["properties"]["calls"]["items"]["anyOf"]
+        .as_array()
+        .unwrap();
+    let names: Vec<_> = reflection_calls
+        .iter()
+        .map(|call| call["properties"]["name"]["const"].as_str().unwrap())
+        .collect();
+    assert!(names.contains(&"reflect"));
+    assert!(!names.contains(&"move_to") && !names.contains(&"use_prop"));
+    let system = reflection_local["messages"][0]["content"].as_str().unwrap();
+    assert!(!system.contains("move_to") && !system.contains("use_prop"));
+}
+
 /// 交谈轮次的兜底：一次回复没有调用就倾听；格式错误或模型掉线连续两次后代为倾听。
 /// 都只交出发言权，不替村民说话，也不搁置，交谈照常轮到对方。
 #[test]

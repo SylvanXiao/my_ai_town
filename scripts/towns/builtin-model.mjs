@@ -15,6 +15,7 @@ export function createBuiltinModelRoutes({ source, config }) {
       ['builtin-model-download'],
       {
         cwd: source,
+        windowsHide: true,
         env: { ...process.env, AI_TOWN_CONFIG: config },
         stdio: ['pipe', 'ignore', 'inherit'],
       }

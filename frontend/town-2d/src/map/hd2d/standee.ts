@@ -62,8 +62,8 @@ export function standee(
 
 /** 立牌立在地图点 (x, y) 上，按俯角转向镜头；toward 是朝镜头方向挪的世界单位 */
 export function stand(mesh: THREE.Object3D, x: number, y: number, tilt: Tilt, toward = 0) {
-  mesh.position.set(x, 0, y + toward)
-  mesh.rotation.x = -tilt.pitch
+  mesh.position.set(x + toward * tilt.yawSin, 0, y + toward * tilt.yawCos)
+  mesh.rotation.set(-tilt.pitch, tilt.yaw, 0, 'YXZ')
 }
 
 /** 立牌平面上、离地 texelsUp 个贴图像素的一点（灯罩、门灯），toward 同上 */
@@ -76,5 +76,6 @@ export function onStandee(
   toward = 0
 ) {
   const up = texelsUp * PIXEL
-  object.position.set(x, up * tilt.cos, y - up * tilt.sin + toward)
+  const depth = toward - up * tilt.sin
+  object.position.set(x + depth * tilt.yawSin, up * tilt.cos, y + depth * tilt.yawCos)
 }

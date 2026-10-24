@@ -176,6 +176,9 @@ impl Town {
             .stdin(Stdio::piped())
             .stdout(Stdio::null())
             .stderr(Stdio::inherit());
+        // Windows 没有 SIGTERM；夹具和桌面管理服务一样，关闭管道后等待 host 保存退出。
+        #[cfg(windows)]
+        command.arg("--stop-on-stdin-close");
         if let Some(delay) = &self.mock_delay {
             command.args(["--mock-llm", "--mock-delay", delay]);
         }
@@ -241,6 +244,14 @@ impl Town {
         let pid = self.child.as_ref().expect("进程未启动").id() as i32;
         assert_eq!(unsafe { libc::kill(pid, libc::SIGTERM) }, 0);
         assert!(self.wait_exit().success(), "SIGTERM 后未完成保存退出");
+    }
+
+    /// Windows 通过管理管道关闭请求正常退出，不能用强杀代替保存。
+    #[cfg(windows)]
+    #[track_caller]
+    pub fn shutdown(&mut self) {
+        self.close_stdin();
+        assert!(self.wait_exit().success(), "stdin 关闭后未完成保存退出");
     }
 
     /// 轮询存档直到满足条件。

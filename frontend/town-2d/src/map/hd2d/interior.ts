@@ -473,26 +473,39 @@ export function interior(house: House, door?: [number, number], points: [number,
 }
 
 /**
- * 屋里的立牌（家具、村民）左右不能伸进墙里：把 x 收到东西两面墙的内侧，南北向隔墙两边也让开。
- * 只挪画出来的位置，落脚点不变。(x, y) 是立牌底边中点，half 是立牌半宽；不在这间屋里原样返回。
+ * 立牌底边随镜头旋转后在地面的两个半宽分别为 halfX/halfY；外墙和隔墙按这个范围让开。
+ * 只挪画出来的位置，落脚点不变；不在这间屋里原样返回。
  */
 export function keepInside(
   house: House,
   partition: Partition | undefined,
   x: number,
   y: number,
-  half: number
-) {
-  if (x < house.x || x > house.x + house.w || y < house.y || y > house.y + house.h) return x
-  const lo = house.x + T + half,
-    hi = house.x + house.w - T - half
-  x = lo > hi ? house.x + house.w / 2 : Math.min(hi, Math.max(lo, x))
-  if (partition && !partition.alongX) {
-    const wall = house.x + house.w / 2 + partition.at,
-      z = y - (house.y + house.h / 2)
-    const clear = half + T / 2
-    if (Math.abs(x - wall) < clear && partition.segments.some(([a, b]) => z > a && z < b))
-      x = x < wall ? wall - clear : wall + clear
+  halfX: number,
+  halfY: number
+): [number, number] {
+  if (x < house.x || x > house.x + house.w || y < house.y || y > house.y + house.h) return [x, y]
+  const clamp = (at: number, start: number, span: number, half: number) => {
+    const lo = start + T + half,
+      hi = start + span - T - half
+    return lo > hi ? start + span / 2 : Math.min(hi, Math.max(lo, at))
   }
-  return x
+  x = clamp(x, house.x, house.w, halfX)
+  y = clamp(y, house.y, house.h, halfY)
+  if (partition) {
+    const alongX = partition.alongX
+    const wall = (alongX ? house.y + house.h / 2 : house.x + house.w / 2) + partition.at
+    const along = alongX ? x - (house.x + house.w / 2) : y - (house.y + house.h / 2)
+    const at = alongX ? y : x
+    const clear = (alongX ? halfY : halfX) + T / 2
+    if (
+      Math.abs(at - wall) < clear &&
+      partition.segments.some(([a, b]) => along > a && along < b)
+    ) {
+      const next = at < wall ? wall - clear : wall + clear
+      if (alongX) y = next
+      else x = next
+    }
+  }
+  return [x, y]
 }

@@ -35,6 +35,8 @@ export interface VillagerPlacement {
   look: string
   x: number
   y: number
+  /** 为避开家具和墙而做的显示偏移，不进入名册位置与行走时间轴。 */
+  offset?: [number, number]
   visible: boolean
   /** 死亡的人变灰，失去行动能力的人压暗 */
   condition: 'normal' | 'incapacitated' | 'dead'
@@ -57,6 +59,9 @@ interface Villager {
   /** 还没走完的几份名册位置，第一份在播放时刻之前（或就是最后一份） */
   path: Sample[]
   dir: Direction
+  /** 最后一次行走的世界方向；转动镜头时静止的人也换到相应朝向帧。 */
+  facing: [number, number]
+  offset: [number, number]
   walked: number
   moving: boolean
 }
@@ -81,7 +86,10 @@ export class Villagers {
   /** 俯角变了：所有人重新立好 */
   setTilt(tilt: Tilt) {
     this.tilt = tilt
-    for (const v of this.all.values()) this.moveTo(v, ...v.at)
+    for (const v of this.all.values()) {
+      this.moveTo(v, ...v.at)
+      this.face(v)
+    }
   }
 
   /** 按名册同步；fresh 表示这是新来的一份名册，位置记进时间轴，其余（换选中、开合屋顶）只改最后一份。
@@ -106,6 +114,12 @@ export class Villagers {
       }
       if (!v) {
         v = this.create(p)
+        changed = true
+      }
+      const offset = p.offset ?? [0, 0]
+      if (offset[0] !== v.offset[0] || offset[1] !== v.offset[1]) {
+        v.offset = [offset[0], offset[1]]
+        this.moveTo(v, ...v.at)
         changed = true
       }
       if (v.mesh.visible !== p.visible) changed = true
@@ -149,7 +163,10 @@ export class Villagers {
     const v = this.all.get(id)
     if (!v) return
     const end = v.path[v.path.length - 1]
-    return [v.at[0] - end.x, v.at[1] - end.y]
+    return [
+      v.at[0] - end.x + v.offset[0] + PIXEL * this.tilt.yawSin,
+      v.at[1] - end.y + v.offset[1] + PIXEL * this.tilt.yawCos,
+    ]
   }
 
   /** 每帧画之前调用（now 是这一帧的时刻）：摆到播放时刻的位置，更新朝向与走路帧；
@@ -170,8 +187,9 @@ export class Villagers {
       const sx = b ? b.x - a.x : 0,
         sy = b ? b.y - a.y : 0
       v.moving = Math.hypot(sx, sy) > 0.01
-      if (v.moving)
-        v.dir = Math.abs(sx) > Math.abs(sy) ? (sx > 0 ? 'right' : 'left') : sy > 0 ? 'down' : 'up'
+      if (v.moving) v.facing = [sx, sy]
+      const directionChanged = this.face(v)
+      if (directionChanged) changed = true
       if (d > 0) {
         v.walked += d
         this.moveTo(v, x, y)
@@ -206,10 +224,13 @@ export class Villagers {
       at: [p.x, p.y],
       path: [{ t: this.latest, x: p.x, y: p.y }],
       dir: 'down',
+      facing: [0, 1],
+      offset: p.offset ?? [0, 0],
       walked: 0,
       moving: false,
     }
     this.moveTo(v, p.x, p.y)
+    this.face(v)
     this.all.set(p.id, v)
     return v
   }
@@ -217,7 +238,18 @@ export class Villagers {
   private moveTo(v: Villager, x: number, y: number) {
     v.at = [x, y]
     // 往镜头方向挪一个像素，站在同一处的道具前面
-    stand(v.mesh, x, y, this.tilt, PIXEL)
+    stand(v.mesh, x + v.offset[0], y + v.offset[1], this.tilt, PIXEL)
+  }
+
+  private face(v: Villager) {
+    const [x, y] = v.facing
+    const sx = x * this.tilt.yawCos - y * this.tilt.yawSin
+    const sy = x * this.tilt.yawSin + y * this.tilt.yawCos
+    const dir = Math.abs(sx) > Math.abs(sy) ? (sx > 0 ? 'right' : 'left') : sy > 0 ? 'down' : 'up'
+    const changed = dir !== v.dir
+    v.dir = dir
+    v.map.offset.y = 1 - (DIRECTIONS.indexOf(dir) + 1) / 4
+    return changed
   }
 
   private remove(id: string) {

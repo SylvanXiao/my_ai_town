@@ -17,26 +17,38 @@ import type { InteriorPalette } from '../themes/interiors'
 // 立体场景用正交斜俯视，和演示页一样镜头真的倾斜：地面纵深在屏幕上缩成 sin(俯角)，
 // 高度 h 显示为 h·cos(俯角)。SVG 层（点击、名字、气泡）的视口纵向同样按 sin(俯角) 压缩，
 // 地面上的点仍和 SVG 对齐；立着的文字和标记再反向拉回原比例。
-// 房子的实际高度按默认俯角标定，俯角越低墙面越高、地面越扁。
+// 房子的实际高度按原先的 50° 标定，调整默认镜头不改变房屋尺寸；俯角越低墙面越高、地面越扁。
 
-/** 俯角范围（度），与演示页一致；越大越接近正俯视 */
+/** 俯角范围（度）：低处看阶地与立面，高处读清道路；保留一点斜角以看见建筑高度 */
 export const PITCH_MIN = 30
-export const PITCH_MAX = 72
-export const DEFAULT_PITCH = 50
+export const PITCH_MAX = 82
+export const DEFAULT_PITCH = 36
 
 export interface Tilt {
   /** 俯角（弧度） */
   pitch: number
   sin: number
   cos: number
+  /** 绕地面中心旋转的方位角（弧度） */
+  yaw: number
+  yawSin: number
+  yawCos: number
 }
-export function tiltOf(degrees: number): Tilt {
+export function tiltOf(degrees: number, yawDegrees = 0): Tilt {
   const pitch = (Math.min(PITCH_MAX, Math.max(PITCH_MIN, degrees)) * Math.PI) / 180
-  return { pitch, sin: Math.sin(pitch), cos: Math.cos(pitch) }
+  const yaw = (yawDegrees * Math.PI) / 180
+  return {
+    pitch,
+    sin: Math.sin(pitch),
+    cos: Math.cos(pitch),
+    yaw,
+    yawSin: Math.sin(yaw),
+    yawCos: Math.cos(yaw),
+  }
 }
 
-/** 竖直面上一个贴图像素的世界高度：在默认俯角下投影后正好是一个地图像素 */
-export const WALL_TEXEL = PIXEL / tiltOf(DEFAULT_PITCH).cos
+/** 竖直面上的贴图像素保持原有物理尺度，不随默认取景改变 */
+export const WALL_TEXEL = PIXEL / Math.cos((50 * Math.PI) / 180)
 
 type Space = Atlas['spaces'][number]
 

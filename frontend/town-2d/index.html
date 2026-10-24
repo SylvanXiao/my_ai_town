@@ -8,9 +8,18 @@
   <body data-tier="night">
     <main class="map-launcher">
       <div class="launcher-stage">
-        <div id="map-preview" class="map-preview" role="img" aria-label="地图预览"></div>
+        <div id="map-preview" class="map-preview" role="region" aria-label="地图预览"></div>
         <div id="preview-state" class="preview-state" role="status">正在加载预览…</div>
         <button id="preview-retry" class="preview-retry" hidden>重试预览</button>
+        <button
+          id="preview-scenic"
+          class="preview-scenic"
+          type="button"
+          aria-pressed="false"
+          disabled
+        >
+          赏景
+        </button>
       </div>
 
       <aside class="launcher-panel">

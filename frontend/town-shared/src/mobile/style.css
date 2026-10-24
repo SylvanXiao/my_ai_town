@@ -69,7 +69,9 @@
 :is([data-layout='compact'], [data-input='touch']) .map-zoom.show-pitch {
   display: flex;
 }
-:is([data-layout='compact'], [data-input='touch']) .map-zoom.show-pitch > :not(.map-pitch) {
+:is([data-layout='compact'], [data-input='touch'])
+  .map-zoom.show-pitch
+  > :not(.map-pitch, .map-view-presets) {
   display: none;
 }
 /* 手指用的俯角滑杆：加宽加长，整块都能按住上下拖 */

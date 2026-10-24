@@ -81,6 +81,6 @@ export class ChimneySmoke {
 
   /** 烟团和立牌一样按俯角后仰，正对镜头 */
   setTilt(tilt: Tilt) {
-    for (const p of this.puffs) p.mesh.rotation.x = -tilt.pitch
+    for (const p of this.puffs) p.mesh.rotation.set(-tilt.pitch, tilt.yaw, 0, 'YXZ')
   }
 }

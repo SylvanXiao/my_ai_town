@@ -23,7 +23,7 @@ if (mode === 'dev')
   client = spawn(
     process.execPath,
     [path.join(root, 'frontend/town-2d/node_modules/vite/bin/vite.js'), ...process.argv.slice(3)],
-    { cwd: path.join(root, 'frontend/town-2d'), stdio: 'inherit' }
+    { cwd: path.join(root, 'frontend/town-2d'), windowsHide: true, stdio: 'inherit' }
   )
 let stopping = false
 async function stop(code = 0) {

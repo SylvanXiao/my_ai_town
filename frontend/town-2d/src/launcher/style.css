@@ -84,6 +84,22 @@ body:has(.map-launcher) {
   border-radius: 10px;
   background: var(--ui-panel);
 }
+.preview-scenic {
+  position: absolute;
+  top: max(16px, env(safe-area-inset-top));
+  left: calc(var(--panel-width) + var(--gap) * 3);
+  z-index: 6;
+  min-height: 42px;
+  padding: 0 16px;
+  border: 1px solid var(--ui-line-strong);
+  border-radius: 10px;
+  background: var(--ui-panel);
+  box-shadow: 0 4px 16px rgb(0 0 0 / 0.2);
+}
+.preview-scenic:disabled {
+  opacity: 0.5;
+  cursor: default;
+}
 
 .launcher-panel,
 .launcher-card {
@@ -407,6 +423,9 @@ body:has(.map-launcher) {
   .preview-retry {
     left: 50%;
   }
+  .preview-scenic {
+    left: max(16px, env(safe-area-inset-left));
+  }
   .launcher-panel-footer {
     margin-top: 16px;
   }
@@ -454,4 +473,27 @@ body:has(.map-launcher) {
   .enter-game {
     min-height: 52px;
   }
+}
+
+/* 赏景仍是原来的静态地图；只让出面板占的空间，桌面和手机都保留退出及镜头控件。 */
+body:has(.map-launcher.is-scenic) {
+  overflow: hidden;
+}
+.map-launcher.is-scenic .launcher-panel,
+.map-launcher.is-scenic .launcher-card {
+  display: none;
+}
+.map-launcher.is-scenic .launcher-stage {
+  position: fixed;
+  inset: 0;
+  width: 100%;
+  height: 100dvh;
+  border-radius: 0;
+}
+.map-launcher.is-scenic .map-preview,
+.map-launcher.is-scenic .preview-state {
+  inset: 0;
+}
+.map-launcher.is-scenic .preview-scenic {
+  left: max(16px, env(safe-area-inset-left));
 }

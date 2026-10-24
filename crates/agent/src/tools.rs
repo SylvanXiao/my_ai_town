@@ -14,6 +14,7 @@ use serde::{Deserialize, Serialize};
 use serde_json::{json, Value};
 use std::str::FromStr;
 
+mod action_arguments;
 mod goals;
 mod invitations;
 pub mod limits;
@@ -515,10 +516,26 @@ fn set_goal(ctx: &mut ToolContext, call: &ToolCall) -> Result<ToolOutcome, ToolE
 fn interact(ctx: &mut ToolContext, call: &ToolCall) -> Result<ToolOutcome, ToolError> {
     let mut args = call.arguments.clone();
     let mut note = None;
+    let mut chat_id_hint = None;
     if let Some(chat) = ctx.world.active_chat(&ctx.session.actor_id) {
         // 正在聊天时只有这一场对话：编号漏填就补上；回应对象写了名字就换成编号，不是参与者就不指定。
         if args.get("interaction_id").is_none() {
             args["interaction_id"] = json!(chat.id);
+        }
+        if matches!(args["operation"].as_str(), Some("say" | "listen" | "leave"))
+            && args["interaction_id"].as_str().is_none_or(|id| {
+                ctx.world
+                    .interactions()
+                    .of(&ctx.session.actor_id, id)
+                    .is_none()
+            })
+        {
+            // 不把模型写的 chat.id 等占位符替换成真实编号；只在拒绝后给下一次尝试提示。
+            // 已存在但过时的互动保持原有错误，不暗示可把它当成当前聊天继续执行。
+            chat_id_hint = Some(format!(
+                "；当前聊天请原样填写 {}，不要使用 chat.id 这样的占位文字",
+                json!({"interaction_id": chat.id})
+            ));
         }
         if let Some(to) = args["to"].as_str() {
             let members = chat.chat.as_ref().map(|c| &c.members);
@@ -537,7 +554,18 @@ fn interact(ctx: &mut ToolContext, call: &ToolCall) -> Result<ToolOutcome, ToolE
             }
         }
     }
-    let command = decode::<InteractionCommand>(&args)?;
+    let with_chat_hint = |mut error: ToolError| {
+        if matches!(
+            error.kind,
+            ToolErrorKind::InvalidArguments | ToolErrorKind::World
+        ) {
+            if let Some(hint) = &chat_id_hint {
+                error.message.push_str(hint);
+            }
+        }
+        error
+    };
+    let command = decode::<InteractionCommand>(&args).map_err(with_chat_hint)?;
     if matches!(
         command,
         InteractionCommand::Offer { .. } | InteractionCommand::Reply { .. }
@@ -551,7 +579,7 @@ fn interact(ctx: &mut ToolContext, call: &ToolCall) -> Result<ToolOutcome, ToolE
             ),
         ));
     }
-    let outcome = execute_interaction(ctx, call, command)?;
+    let outcome = execute_interaction(ctx, call, command).map_err(with_chat_hint)?;
     Ok(match (outcome, note) {
         (ToolOutcome::Complete(mut value), Some(note)) => {
             value["note"] = json!(note);
@@ -610,7 +638,7 @@ fn execute_interaction(
     complete(json!({"interaction":view}))
 }
 fn run_actions(ctx: &mut ToolContext, call: &ToolCall) -> Result<ToolOutcome, ToolError> {
-    let args = decode::<Actions>(&call.arguments)?;
+    let args = action_arguments::decode(&call.arguments)?;
     require_idle(ctx, "一次会话只能等待一组身体动作或事件")?;
     let (group_id, revision) = (command_id(ctx, call), revision(ctx)?);
     ctx.world

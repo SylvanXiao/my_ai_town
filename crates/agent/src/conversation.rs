@@ -1,9 +1,9 @@
 //! 与传输无关的会话消息。原生工具和 JSON 兼容端点都转换为这一种协议。
 pub use crate::completion::ModelError;
-use serde::{Deserialize, Serialize};
+use serde::{de, Deserialize, Serialize};
 
 /// 一次回复的自述字数、工具调用个数与单个调用参数的字节上限。
-const THOUGHT_MAX_CHARS: usize = 4000;
+pub(crate) const THOUGHT_MAX_CHARS: usize = 4000;
 const CALLS_MAX: usize = 8;
 const ARGUMENTS_MAX_BYTES: usize = 16_000;
 use serde_json::{json, Value};
@@ -172,5 +172,67 @@ impl Usage {
     }
     pub fn total(&self) -> u64 {
         self.input_tokens.saturating_add(self.output_tokens)
+    }
+}
+
+// 新增的 JSON 兼容入口共用；原生工具解析保持不变。直接解析为 Value 会静默保留重复键的最后一个值，
+// 例如两个 locale 会改变模型动作；递归检查对象键后才允许进入既有协议解析。
+pub(crate) struct UniqueJson(pub(crate) Value);
+
+impl<'de> Deserialize<'de> for UniqueJson {
+    fn deserialize<D: de::Deserializer<'de>>(deserializer: D) -> Result<Self, D::Error> {
+        struct JsonVisitor;
+        impl<'de> de::Visitor<'de> for JsonVisitor {
+            type Value = UniqueJson;
+
+            fn expecting(&self, formatter: &mut std::fmt::Formatter) -> std::fmt::Result {
+                formatter.write_str("不包含重复字段的 JSON")
+            }
+
+            fn visit_bool<E: de::Error>(self, value: bool) -> Result<Self::Value, E> {
+                Ok(UniqueJson(value.into()))
+            }
+
+            fn visit_i64<E: de::Error>(self, value: i64) -> Result<Self::Value, E> {
+                Ok(UniqueJson(value.into()))
+            }
+
+            fn visit_u64<E: de::Error>(self, value: u64) -> Result<Self::Value, E> {
+                Ok(UniqueJson(value.into()))
+            }
+
+            fn visit_f64<E: de::Error>(self, value: f64) -> Result<Self::Value, E> {
+                Ok(UniqueJson(value.into()))
+            }
+
+            fn visit_str<E: de::Error>(self, value: &str) -> Result<Self::Value, E> {
+                Ok(UniqueJson(value.into()))
+            }
+
+            fn visit_unit<E: de::Error>(self) -> Result<Self::Value, E> {
+                Ok(UniqueJson(Value::Null))
+            }
+
+            fn visit_seq<A: de::SeqAccess<'de>>(self, mut seq: A) -> Result<Self::Value, A::Error> {
+                let mut values = Vec::new();
+                while let Some(UniqueJson(value)) = seq.next_element()? {
+                    values.push(value);
+                }
+                Ok(UniqueJson(Value::Array(values)))
+            }
+
+            fn visit_map<A: de::MapAccess<'de>>(self, mut map: A) -> Result<Self::Value, A::Error> {
+                let mut values = serde_json::Map::new();
+                while let Some(key) = map.next_key::<String>()? {
+                    if values.contains_key(&key) {
+                        return Err(de::Error::custom(format!("重复字段 {key}")));
+                    }
+                    let UniqueJson(value) = map.next_value()?;
+                    values.insert(key, value);
+                }
+                Ok(UniqueJson(Value::Object(values)))
+            }
+        }
+        deserializer.deserialize_any(JsonVisitor)
     }
 }
