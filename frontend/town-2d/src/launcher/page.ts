@@ -35,6 +35,26 @@ window.addEventListener('resize', notePreview)
 
 const enter = query<HTMLButtonElement>(document, '#enter-game')
 const retry = query<HTMLButtonElement>(document, '#preview-retry')
+const scenic = query<HTMLButtonElement>(document, '#preview-scenic')
+const launcher = query<HTMLElement>(document, '.map-launcher')
+let scenicScrollY = 0
+/** 只展开现有静态预览，不连接世界，也不改变存档的时钟或天气。 */
+function setScenic(enabled: boolean) {
+  if (enabled === launcher.classList.contains('is-scenic')) return
+  if (enabled) scenicScrollY = window.scrollY
+  launcher.classList.toggle('is-scenic', enabled)
+  scenic.setAttribute('aria-pressed', String(enabled))
+  scenic.textContent = enabled ? '返回选镇' : '赏景'
+  scenic.title = enabled ? '返回选择小镇（Esc）' : '展开地图，欣赏小镇景色'
+  window.scrollTo(0, enabled ? 0 : scenicScrollY)
+  scenic.focus({ preventScroll: true })
+}
+scenic.onclick = () => setScenic(!launcher.classList.contains('is-scenic'))
+document.addEventListener('keydown', (event) => {
+  if (event.key !== 'Escape' || !launcher.classList.contains('is-scenic')) return
+  event.preventDefault()
+  setScenic(false)
+})
 const launcherMusic = createMusicController(
   query<HTMLButtonElement>(document, '#launcher-music-toggle'),
   { fixedTrackId: 'daylife-gathering' }
@@ -67,6 +87,8 @@ function describe(map: MapEntry) {
 }
 
 async function select(map: MapEntry) {
+  setScenic(false)
+  scenic.disabled = true
   actions.open = false
   selected = map
   const current = ++request
@@ -94,6 +116,7 @@ async function select(map: MapEntry) {
     await rendered.ready
     if (current !== request) return
     $('preview-state').hidden = true
+    scenic.disabled = false
     if (fitNext === map.id) {
       fitNext = ''
       $('map-preview').querySelector<HTMLButtonElement>('.zoom-readout')?.click()
@@ -312,6 +335,10 @@ initCreator(
 )
 // 安卓返回键：先收起「更多操作」，其余交给应用壳（再按一次退出）
 onBack(() => {
+  if (launcher.classList.contains('is-scenic')) {
+    setScenic(false)
+    return true
+  }
   if (!actions.open) return false
   actions.open = false
   return true

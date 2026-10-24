@@ -195,7 +195,10 @@ test('preview/save/open/reopen/reset/isolation work with actual hosts and persis
       reordered.positions.find((p) => p.id === 'user:map-book')
     )
     const filesBefore = await fs.readFile(path.join(root, 'towns', a.id, 'map.json'), 'utf8')
+    const children = [...m.hosts.running.values()].map(({ child }) => child)
     await m.stop()
+    for (const child of children)
+      assert.equal(child.exitCode, 0, '关闭小镇必须让 host 保存后正常退出')
     m = await createManager({ root, port: 0, mockLlm: true })
     base = `http://127.0.0.1:${m.server.address().port}/api/towns`
     assert.equal((await api('')).towns.length, 2)

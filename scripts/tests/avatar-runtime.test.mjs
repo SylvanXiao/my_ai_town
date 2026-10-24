@@ -7,6 +7,59 @@ import { createManager } from '../town-manager.mjs'
 import { APPEARANCE_SET } from '../mapgen/budget.mjs'
 import { walkingHarness } from './avatar-input-support.mjs'
 
+test('rotated view maps WASD and stick input to world directions while click routes stay in world space', () => {
+  const sent = []
+  let turned = true
+  const map = {
+    avatarSupported: true,
+    walkDirection: ([x, y]) => (turned ? [y, -x] : [x, y]),
+  }
+  const h = walkingHarness(
+    () => {},
+    () => true,
+    {
+      map,
+      getState: () => ({
+        epoch: 'owned',
+        speed: 1,
+        actor: {
+          busy: false,
+          locus: { at: { kind: 'free', space: 'outside', position: [0, 0] } },
+        },
+      }),
+      getWorld: () => 'world',
+      getHolds: () => [],
+      owned: () => true,
+      mapVisible: () => true,
+      send: (msg) => sent.push(Array.from(msg.direction)),
+      execute: async () => true,
+      targets: () => [],
+      toggleBag() {},
+      showToast() {},
+    }
+  )
+  const latest = () => sent.at(-1).map((v) => (v === 0 ? 0 : v))
+  try {
+    h.event(h.window, 'keydown', { code: 'KeyW' })
+    assert.deepEqual(latest(), [-1, 0])
+    turned = false
+    h.frame()
+    assert.deepEqual(latest(), [0, -1], '按住键时也读取最新镜头方向')
+    h.event(h.window, 'keyup', { code: 'KeyW' })
+    assert.deepEqual(latest(), [0, 0])
+    turned = true
+    h.navigation.stick([1, 0])
+    assert.deepEqual(latest(), [0, -1])
+    h.navigation.stick(null)
+    assert.deepEqual(latest(), [0, 0])
+    map.onAvatarWalkTo({ space: 'outside', position: [10, 0] })
+    h.navigation.walk.tick()
+    assert.deepEqual(latest(), [1, 0], '点击路线不能被镜头重复旋转')
+  } finally {
+    h.abort.abort()
+  }
+})
+
 test('actual WASD input adapter drives a generated world and saves its stopped position', async () => {
   const root = await fs.mkdtemp(path.join(os.tmpdir(), 'town-avatar-runtime-'))
   const m = await createManager({ root, port: 0, mockLlm: true })

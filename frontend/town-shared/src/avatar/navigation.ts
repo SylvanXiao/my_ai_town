@@ -56,6 +56,8 @@ export function createAvatarNavigation(deps: AvatarNavigationDeps) {
       direction,
     })
   }
+  const emitManualDirection = (direction: [number, number]) =>
+    emitDirection(map.walkDirection?.(direction) ?? direction)
   const primaryAction = () => {
     if (owned())
       targets()
@@ -122,7 +124,7 @@ export function createAvatarNavigation(deps: AvatarNavigationDeps) {
     (direction) => {
       // 按方向键就放弃点击的目标；松键和失焦发的零向量不算
       if (direction[0] || direction[1]) walk.clear()
-      emitDirection(direction)
+      emitManualDirection(direction)
     },
     primaryAction,
     signal,
@@ -143,11 +145,11 @@ export function createAvatarNavigation(deps: AvatarNavigationDeps) {
     if (!stickDirection) {
       walk.clear()
       stickTimer = window.setInterval(() => {
-        if (stickDirection) emitDirection(stickDirection)
+        if (stickDirection) emitManualDirection(stickDirection)
       }, 100)
     }
     stickDirection = direction
-    emitDirection(direction)
+    emitManualDirection(direction)
   }
   signal.addEventListener('abort', () => clearInterval(stickTimer))
   /** 停下：方向键、摇杆和点击目标一起清掉。化身自己开门那一下除外，那是路线的一部分。 */

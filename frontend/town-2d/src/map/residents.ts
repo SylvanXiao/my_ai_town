@@ -37,6 +37,8 @@ export class ResidentLayer {
   /** 居民编号 → 挑头像用的编号，来自最近一份居民登记 */
   private portraitKeys = new Map<string, string>()
   private positions = new Map<string, [number, number]>()
+  /** 世界坐标先随相机方位投影，文字和标记再在 SVG 视图坐标里保持直立。 */
+  private project: (point: [number, number]) => [number, number] = (point) => point
   /** 同一落脚点几个人分开画之前的位置，也就是真正站的地方 */
   private anchors = new Map<string, [number, number]>()
   /** 多人名单要用的名字、状态和地点，place 时记录 */
@@ -86,6 +88,12 @@ export class ResidentLayer {
    *  走过去找人、判断人在哪间屋里都按这里，不按画出来的位置 */
   getMemberAnchor(id: string): [number, number] | undefined {
     return this.anchors.get(id)
+  }
+
+  /** 相机转向时重新布局；世界坐标保留给寻路、遮挡和立体场景。 */
+  setProjection(project: (point: [number, number]) => [number, number]) {
+    this.project = project
+    this.relayout()
   }
 
   /** 选中高亮（点击空白地图不清除选中，由调用方决定何时传 null） */
@@ -208,8 +216,9 @@ export class ResidentLayer {
     return [Math.cos(angle) * 140 * s, Math.sin(angle) * 140 * s]
   }
 
-  private place(v: Villager, member: RosterMember, locale: string, x: number, y: number) {
-    this.positions.set(member.id, [x, y])
+  private place(v: Villager, member: RosterMember, locale: string, worldX: number, worldY: number) {
+    this.positions.set(member.id, [worldX, worldY])
+    const [x, y] = this.project([worldX, worldY])
     v.name.textContent =
       member.kind === 'avatar' ? `${member.appearance?.marker ?? '我'} ${member.name}` : member.name
     v.g.classList.toggle('vavatar', member.kind === 'avatar')
@@ -313,8 +322,9 @@ export class ResidentLayer {
     const labels: LabelRect[] = [...occupied]
     const bodies = new Map<string, LabelRect>()
     for (const [id, v] of this.villagers) {
-      const pos = this.positions.get(id)
-      if (!seen.has(id) || !pos || v.g.getAttribute('display') === 'none') continue
+      const worldPos = this.positions.get(id)
+      if (!seen.has(id) || !worldPos || v.g.getAttribute('display') === 'none') continue
+      const pos = this.project(worldPos)
       const verb = grouped.has(id) ? null : v.verb.getBBox()
       if (verb?.width && verb.height) labels.push(verb)
       const s = this.markerScale

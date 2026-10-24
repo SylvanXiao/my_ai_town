@@ -23,11 +23,19 @@ interface GestureEvent extends UIEvent {
   clientY: number
 }
 
+export interface CameraArea {
+  x: number
+  y: number
+  width: number
+  height: number
+}
+
 export class MapCamera {
   private readonly abort = new AbortController()
   private controls!: HTMLElement
   private readonly resize: ResizeObserver
   dispose() {
+    this.stopZoomAnimation()
     this.abort.abort()
     this.resize.disconnect()
     this.controls.remove()
@@ -39,6 +47,32 @@ export class MapCamera {
   private scale = 1
   /** 立体场景里地面随俯角倾斜，纵深在屏幕上缩成这个比例；平面地图为 1 */
   private vScale = 1
+  private yaw = 0
+  private yawSin = 0
+  private yawCos = 1
+
+  /** 地面世界坐标与旋转后的 SVG 坐标分开；平移和缩放在 SVG 坐标里进行。 */
+  readonly project = ([x, y]: [number, number]): [number, number] => [
+    x * this.yawCos - y * this.yawSin,
+    x * this.yawSin + y * this.yawCos,
+  ]
+
+  readonly unproject = ([x, y]: [number, number]): [number, number] => [
+    x * this.yawCos + y * this.yawSin,
+    -x * this.yawSin + y * this.yawCos,
+  ]
+
+  setYaw(degrees: number) {
+    if (degrees === this.yaw) return
+    this.stopZoomAnimation()
+    const world = this.unproject(this.center)
+    this.yaw = degrees
+    this.yawSin = Math.sin((degrees * Math.PI) / 180)
+    this.yawCos = Math.cos((degrees * Math.PI) / 180)
+    this.center = this.project(world)
+    if (this.fitted) this.scale = this.fitScale()
+    this.applyViewBox()
+  }
   /** 处在「整图」状态：容器尺寸变化时重新按整图取倍数 */
   private fitted = true
   private zoomInBtn!: HTMLButtonElement
@@ -101,6 +135,7 @@ export class MapCamera {
 
   /** 跟随用：仅当目标不在露出来的那块里（带边距）时，把它挪到那块的中间 */
   panTo(x: number, y: number) {
+    const [px, py] = this.project([x, y])
     const [vx, vy, vw, vh] = this.vb
     const [l, t, r, b] = this.openArea()
     const left = vx + vw * l,
@@ -112,13 +147,14 @@ export class MapCamera {
     // 头顶上还挂着名字和提示标签：上边至少留 80 个屏幕像素，不然名字会钻到上面的面板底下
     const perPixel = vh / (this.container.getBoundingClientRect().height || 1)
     const above = Math.max(my, 80 * perPixel)
-    if (x >= left + mx && x <= right - mx && y >= top + above && y <= bottom - my) return
+    if (px >= left + mx && px <= right - mx && py >= top + above && py <= bottom - my) return
     this.lookAt(x, y)
   }
 
   /** 把世界点放到露出来的那块的中间（没有面板时就是画面中心），倍数不变。
    *  那块很矮时（弹出键盘）往下放一点，头顶上至少留 80 像素给名字 */
   lookAt(x: number, y: number) {
+    ;[x, y] = this.project([x, y])
     const [w, h] = this.viewSize()
     const [l, t, r, b] = this.openArea()
     const minAbove = 80 / (this.container.getBoundingClientRect().height || 1)
@@ -138,6 +174,47 @@ export class MapCamera {
     this.scale = this.levels()[this.clampIndex(this.indexOf((this.size()[0] * PIXEL) / v[2]))]
     this.fitted = false
     this.applyViewBox()
+  }
+
+  /** 把一块地图装进面板之间的可见区域；先设置俯角，再按压缩后的地面高度取景。
+   *  预设只在玩家点击时生效，之后仍可正常拖动与缩放。 */
+  frameArea(area: CameraArea) {
+    if (area.width <= 0 || area.height <= 0) return
+    this.stopZoomAnimation()
+    const [width, height] = this.size()
+    const [left, top, right, bottom] = this.openArea()
+    const c = Math.abs(this.yawCos),
+      s = Math.abs(this.yawSin)
+    const target = Math.min(
+      (width * (right - left) * PIXEL) / (area.width * c + area.height * s),
+      (height * (bottom - top) * PIXEL) / ((area.width * s + area.height * c) * this.vScale)
+    )
+    if (!Number.isFinite(target) || target <= 0) return
+    // 预设按构图精确取景；向下取整档可能把视野放大一倍。手动缩放仍走原来的像素档位。
+    this.scale = target
+    const [vw, vh] = this.viewSize()
+    const [cx, cy] = this.project([area.x + area.width / 2, area.y + area.height / 2])
+    this.center = [cx + (0.5 - (left + right) / 2) * vw, cy + (0.5 - (top + bottom) / 2) * vh]
+    this.fitted = false
+    this.applyViewBox()
+  }
+
+  /** HD 场景加载后才提供街景与俯视入口；手机仍放在现有「俯角」弹层里。 */
+  setViewPresets(presets: { label: string; title: string; apply: () => void }[]) {
+    this.controls.querySelector('.map-view-presets')?.remove()
+    const group = document.createElement('div')
+    group.className = 'map-view-presets'
+    group.setAttribute('role', 'group')
+    group.setAttribute('aria-label', '取景方式')
+    for (const preset of presets) {
+      const button = document.createElement('button')
+      button.type = 'button'
+      button.textContent = preset.label
+      button.title = preset.title
+      button.addEventListener('click', preset.apply, { signal: this.abort.signal })
+      group.append(button)
+    }
+    this.controls.querySelector('.map-pitch')?.after(group)
   }
 
   /** 150% 开始显示近景道具；回落保留 10% 余量，避免临界缩放来回闪换。 */
@@ -163,7 +240,7 @@ export class MapCamera {
   private closeUp() {
     this.scale =
       this.levels()[this.clampIndex(this.indexOf(closeUpPixels() * (window.devicePixelRatio || 1)))]
-    this.center = [this.vb0[0] + this.vb0[2] / 2, this.vb0[1] + this.vb0[3] / 2]
+    this.center = this.project([this.vb0[0] + this.vb0[2] / 2, this.vb0[1] + this.vb0[3] / 2])
     this.fitted = false
     this.applyViewBox()
   }
@@ -171,7 +248,7 @@ export class MapCamera {
   /** 回到整图：能装下整张图的最大倍数 */
   resetView() {
     this.scale = this.fitScale()
-    this.center = [this.vb0[0] + this.vb0[2] / 2, this.vb0[1] + this.vb0[3] / 2]
+    this.center = this.project([this.vb0[0] + this.vb0[2] / 2, this.vb0[1] + this.vb0[3] / 2])
     this.fitted = true
     this.applyViewBox()
   }
@@ -184,7 +261,14 @@ export class MapCamera {
   /** 整图刚好装进容器时的倍数 */
   private fitRatio() {
     const [w, h] = this.size()
-    return Math.min((w * PIXEL) / this.vb0[2], (h * PIXEL) / (this.vb0[3] * this.vScale)) || 1
+    const c = Math.abs(this.yawCos),
+      s = Math.abs(this.yawSin)
+    return (
+      Math.min(
+        (w * PIXEL) / (this.vb0[2] * c + this.vb0[3] * s),
+        (h * PIXEL) / ((this.vb0[2] * s + this.vb0[3] * c) * this.vScale)
+      ) || 1
+    )
   }
   /** 整图倍数不到 2 时一个地图像素还不到两个设备像素，不均匀看不出来，整图档直接取容器比例 */
   private levels() {
@@ -282,7 +366,7 @@ export class MapCamera {
 
   /** 换 steps 档，保持屏幕点 (cx, cy) 下的地方不动（按钮以画面中心为准） */
   private zoomAt(steps: number, cx: number, cy: number) {
-    const [wx, wy] = this.clientToWorld(cx, cy)
+    const [wx, wy] = this.clientToView(cx, cy)
     this.animateZoom(this.stepped(steps), { anchor: [wx, wy, cx, cy] })
   }
 
@@ -298,8 +382,8 @@ export class MapCamera {
     return [w * unit, (h * unit) / this.vScale]
   }
 
-  /** 屏幕坐标 → 世界坐标。走 SVG 自己的 CTM，preserveAspectRatio 留白也算得准 */
-  private clientToWorld(cx: number, cy: number): [number, number] {
+  /** 屏幕坐标 → 旋转后的视图坐标。走 SVG 自己的 CTM，preserveAspectRatio 留白也算得准 */
+  private clientToView(cx: number, cy: number): [number, number] {
     const matrix = this.svg.getScreenCTM()
     if (!matrix) return [cx, cy]
     const p = new DOMPoint(cx, cy).matrixTransform(matrix.inverse())
@@ -400,7 +484,7 @@ export class MapCamera {
       gesture.y = y
     }
     const zoomTo = (scale: number, x: number, y: number) => {
-      const [wx, wy] = this.clientToWorld(x, y)
+      const [wx, wy] = this.clientToView(x, y)
       this.scaleAround(scale, wx, wy, x, y)
     }
     const finish = () => {
@@ -408,7 +492,7 @@ export class MapCamera {
       const g = gesture
       gesture = null
       if (!g) return
-      const [wx, wy] = this.clientToWorld(g.x, g.y)
+      const [wx, wy] = this.clientToView(g.x, g.y)
       this.animateZoom(this.settled(g.start, this.scale), { anchor: [wx, wy, g.x, g.y] })
     }
     mapEl.addEventListener(
@@ -469,7 +553,7 @@ export class MapCamera {
       (ev) => {
         // 手指双击由手势那边处理，浏览器补发的 dblclick 不再放大一次
         if (performance.now() - this.lastTouch < 800) return
-        const [wx, wy] = this.clientToWorld(ev.clientX, ev.clientY)
+        const [wx, wy] = this.clientToView(ev.clientX, ev.clientY)
         this.zoomCenter(2, wx, wy)
       },
       { signal }
@@ -535,7 +619,7 @@ export class MapCamera {
         y0: my,
         scale0: this.scale,
         start: this.scale,
-        world: this.clientToWorld(mx, my),
+        world: this.clientToView(mx, my),
         mid: [mx, my],
         mode: null,
       }
@@ -544,7 +628,7 @@ export class MapCamera {
       if (pair?.mode === 'pinch') {
         // 松手缓动到一档整倍数，最后的中点不动（这时已经少了一根手指，中点用记下的）
         const [mx, my] = pair.mid
-        const [wx, wy] = this.clientToWorld(mx, my)
+        const [wx, wy] = this.clientToView(mx, my)
         this.animateZoom(this.settled(pair.start, this.scale), { anchor: [wx, wy, mx, my] })
       }
       pair = null
@@ -604,7 +688,7 @@ export class MapCamera {
               pair.mode = 'pinch'
               pair.d0 = d
               pair.scale0 = this.scale
-              pair.world = this.clientToWorld(mx, my)
+              pair.world = this.clientToView(mx, my)
             } else if (Math.abs(my - pair.y0) > 14) pair.mode = 'tilt'
             else return
           }
@@ -667,7 +751,7 @@ export class MapCamera {
           Math.hypot(ev.clientX - lastTap.x, ev.clientY - lastTap.y) < 30
         ) {
           lastTap = null
-          const [wx, wy] = this.clientToWorld(ev.clientX, ev.clientY)
+          const [wx, wy] = this.clientToView(ev.clientX, ev.clientY)
           this.zoomCenter(2, wx, wy)
           return
         }
@@ -677,7 +761,7 @@ export class MapCamera {
       else if (d.group) this.onGroupClick(d.group, [ev.clientX, ev.clientY])
       else if (d.vid) this.onVillagerClick(d.vid)
       else if (d.prop) this.onPropClick(d.prop)
-      else this.onGroundClick(this.clientToWorld(ev.clientX, ev.clientY))
+      else this.onGroundClick(this.unproject(this.clientToView(ev.clientX, ev.clientY)))
     }
     mapEl.addEventListener('pointerup', release, { signal })
     mapEl.addEventListener('pointercancel', release, { signal })

@@ -10,6 +10,8 @@ export function worker(source, config, mode, input, { signal, timeout = 100000 }
       [mode],
       {
         cwd: source,
+        // 隐藏管理服务的窗口不会传递给子进程；后台校验和状态轮询也要显式隐藏控制台。
+        windowsHide: true,
         env: { ...process.env, AI_TOWN_CONFIG: config },
         stdio: ['pipe', 'pipe', 'pipe'],
       }

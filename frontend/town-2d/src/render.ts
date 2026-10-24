@@ -19,7 +19,8 @@ import type { HdScene } from './map/hd2d/scene'
 import type { VillagerPlacement } from './map/hd2d/villagers'
 import { PropPositions } from './map/propPositions'
 import { RoomCovers } from './map/rooms'
-import { MapCamera } from './map/camera'
+import { MapCamera, type CameraArea } from './map/camera'
+import { DEFAULT_PITCH, PITCH_MAX } from './map/hd2d/layout'
 import { standUpright, uprightRatio } from './map/upright'
 import { ThoughtBubbles } from './map/bubbles'
 import { ResidentLayer } from './map/residents'
@@ -28,7 +29,7 @@ import { propArtwork } from './map/propArt'
 import type { PropPlacement } from './map/hd2d/props'
 import { avatarLookOptions, VILLAGER_HALF, VILLAGER_HEIGHT } from './map/hd2d/villagerSprite'
 import { PROP_HALF, WalkRoutes } from './map/route'
-import { LEGACY_UNITS_PER_METRE, OUTDOOR_SPACE } from './map/grid'
+import { LEGACY_UNITS_PER_METRE, OUTDOOR_SPACE, roomRect } from './map/grid'
 import { village, type MapTheme } from './map/themes'
 import { el } from 'town-shared/svg'
 import type { Quality } from 'town-shared/quality'
@@ -59,13 +60,19 @@ export class TownMap {
   private lastRoster?: Extract<ServerMsg, { type: 'roster' }>
   readonly avatarSupported = true
   readonly avatarLooks = avatarLookOptions
+  walkDirection(direction: [number, number]): [number, number] {
+    return this.camera.unproject(direction)
+  }
   private avatarActive = false
   private zoom = 1
   setAvatarActive(active: boolean) {
     this.avatarActive = active
     this.svg.classList.toggle('avatar-mode', active)
     this.applyMarkerScale()
-    if (!active) this.prompts.clear()
+    if (!active) {
+      this.avatarPrompts = []
+      this.prompts.clear()
+    }
   }
   /** 化身在场或立体场景接手时，标记、文字与提示标签按缩放倍率反向缩放：整图时和观察模式一样大，
    *  放大后沿用人物尺寸比例，名字额外限制为不超过 16 屏幕像素，避免遮住近景。平面观察模式不缩放。 */
@@ -93,14 +100,21 @@ export class TownMap {
   }
   /** 人物取名册位置，门取出入口编号对应的门口，道具取图形中心。 */
   setAvatarPrompts(prompts: AvatarPrompt[]) {
-    this.prompts.update(prompts, (p) =>
-      p.kind === 'person'
-        ? this.residents.getMemberPos(p.target)
-        : p.kind === 'portal'
-          ? this.scene.doorAnchor.get(p.target)
-          : this.propCenter(p.target)
-    )
+    this.avatarPrompts = prompts
+    this.prompts.update(prompts, (p) => {
+      const point =
+        p.kind === 'person'
+          ? this.residents.getMemberPos(p.target)
+          : p.kind === 'portal'
+            ? this.scene.doorAnchor.get(p.target)
+            : this.propCenter(p.target)
+      return point && this.camera.project(point)
+    })
   }
+  private avatarPrompts: AvatarPrompt[] = []
+  private readonly groundLayer = el('g', { class: 'map-ground' })
+  private readonly staticLabels = el('g', { class: 'map-labels' })
+  private readonly labelAnchors = new WeakMap<Element, [number, number]>()
   readonly svg: SVGSVGElement
   onPropClick: ((id: string) => void) | null = null
   onVillagerClick: ((id: string) => void) | null = null
@@ -159,6 +173,17 @@ export class TownMap {
       this.theme
     ))
     this.svg = scene.svg
+    // 地面几何随方位角旋转；文字、人物和道具命中区在投影后单独摆放，始终朝向屏幕。
+    for (const label of this.svg.querySelectorAll('.rg, .rm')) {
+      this.labelAnchors.set(label, [
+        Number(label.getAttribute('x')),
+        Number(label.getAttribute('y')),
+      ])
+      this.staticLabels.append(label)
+    }
+    this.groundLayer.append(...this.svg.childNodes)
+    this.svg.append(this.groundLayer, this.staticLabels, scene.details)
+    this.rememberPropLabels()
     this.placed = scene.initialProps
     this.rooms = new RoomCovers(scene.spaceAt)
     this.positions = new PropPositions(
@@ -244,14 +269,93 @@ export class TownMap {
         this.rooms.attach(this.svg, this.hd.houses)
         this.hd.onTilt = () => this.applyTilt()
         this.hd.onVillagersMoved = () => this.followVillagers()
+        this.hd.onDecorationChange = () => this.applyRouteObstacles()
         this.applyTilt()
         if (this.viewInsets) this.hd.setFocusInsets(this.viewInsets.top, this.viewInsets.bottom)
+        this.camera.setViewPresets([
+          { label: '街景', title: '低角度看广场与街巷', apply: () => this.showCameraPreset(false) },
+          { label: '俯视', title: '从上方看全镇布局', apply: () => this.showCameraPreset(true) },
+        ])
       })
       .catch((error) => {
         console.warn('立体像素场景未能启动，使用平面地图', error)
         this.showFlat(atlas)
       })
       .finally(() => this.loaded())
+  }
+
+  /** 取景只读图集：围绕本镇真正的广场组织街景，俯视容纳道路和所有建筑，不依赖默认地图坐标。 */
+  private showCameraPreset(overhead: boolean) {
+    const hd = this.hd
+    if (!hd) return
+    hd.setYaw(0)
+    hd.setPitch(overhead ? PITCH_MAX : DEFAULT_PITCH)
+    const atlas = this.sourceAtlas
+    let x0 = Infinity,
+      y0 = Infinity,
+      x1 = -Infinity,
+      y1 = -Infinity
+    const include = (x: number, y: number) => {
+      x0 = Math.min(x0, x)
+      y0 = Math.min(y0, y)
+      x1 = Math.max(x1, x)
+      y1 = Math.max(y1, y)
+    }
+    for (const region of atlas.regions)
+      for (const [x, y] of region.cells) {
+        include(x * region.cell_size, y * region.cell_size)
+        include((x + 1) * region.cell_size, (y + 1) * region.cell_size)
+      }
+    for (const space of atlas.spaces) {
+      if (space.id === OUTDOOR_SPACE) continue
+      const box = roomRect(space)
+      include(box.x, box.y)
+      include(box.x1, box.y1)
+    }
+    for (const edge of atlas.edges) for (const point of edge.polyline) include(...point)
+    if (!Number.isFinite(x0)) {
+      x0 = y0 = 0
+      x1 = atlas.canvas.width
+      y1 = atlas.canvas.height
+    }
+    const width = Math.max(1, x1 - x0),
+      height = Math.max(1, y1 - y0)
+    let area: CameraArea
+    if (overhead) {
+      // 屋脊仍高于地面，四边留空让最外侧的屋顶、树冠与水岸能完整入镜。
+      area = {
+        x: x0 - width * 0.08,
+        y: y0 - height * 0.12,
+        width: width * 1.16,
+        height: height * 1.2,
+      }
+    } else {
+      const plazas = atlas.regions.filter(
+        (region) => region.kind === 'plaza' && region.cells.length
+      )
+      const plaza = plazas.sort(
+        (a, b) => b.cells.length * b.cell_size ** 2 - a.cells.length * a.cell_size ** 2
+      )[0]
+      const center = plaza
+        ? plaza.cells.reduce(
+            (point, [x, y]) => [
+              point[0] + ((x + 0.5) * plaza.cell_size) / plaza.cells.length,
+              point[1] + ((y + 0.5) * plaza.cell_size) / plaza.cells.length,
+            ],
+            [0, 0]
+          )
+        : [x0 + width / 2, y0 + height / 2]
+      // 广场位于清晰中景偏下处，镜头向北多留一些空间给屋顶、树林与远雾。
+      const viewWidth = width * 0.58,
+        viewHeight = height * 0.64
+      area = {
+        x: center[0] - viewWidth / 2,
+        y: center[1] - viewHeight * 0.58,
+        width: viewWidth,
+        height: viewHeight,
+      }
+    }
+    this.camera.frameArea(area)
   }
   /** 平面像素地面（带树）垫在 SVG 最底层，天气和昼夜也改由 SVG 天气层画 */
   private showFlat(atlas: Atlas) {
@@ -265,17 +369,37 @@ export class TownMap {
   /** 地面随俯角倾斜：地图视口纵向压扁，立着的文字按比例拉回，房间名跟着屋顶高度走 */
   private applyTilt() {
     if (!this.hd) return
+    this.groundLayer.setAttribute('transform', `rotate(${this.hd.yaw})`)
+    this.camera.setYaw(this.hd.yaw)
     this.camera.setVerticalScale(this.hd.verticalScale)
-    this.residents.update(this.entries)
+    this.residents.setProjection(this.camera.project)
     this.placeDestination()
     this.rooms.reset()
     this.refreshRooms()
     this.standLabels()
+    this.setAvatarPrompts(this.avatarPrompts)
+    this.followVillagers()
   }
   /** 地名、房间名和道具名按俯角拉回；跟着立牌走的道具名和房间名挪动时各自再拉一次 */
   private standLabels() {
     const k = this.hd ? 1 / this.hd.verticalScale : 1
-    for (const label of this.svg.querySelectorAll('.rg, .rm, .pl')) standUpright(label, k)
+    for (const label of this.svg.querySelectorAll('.rg, .pl')) {
+      const anchor = this.labelAnchors.get(label)
+      if (anchor) {
+        const [x, y] = this.camera.project(anchor)
+        label.setAttribute('x', String(x))
+        label.setAttribute('y', String(y))
+      }
+      standUpright(label, k)
+    }
+    this.anchorProps()
+  }
+  private rememberPropLabels() {
+    for (const label of this.scene.propLabels.values())
+      this.labelAnchors.set(label, [
+        Number(label.getAttribute('x')),
+        Number(label.getAttribute('y')),
+      ])
   }
   private clock?: [number, string | undefined]
 
@@ -288,13 +412,13 @@ export class TownMap {
     const changed = this.rooms.update([
       this.selectedId ? this.residents.getMemberAnchor(this.selectedId) : undefined,
       avatar && this.residents.getMemberAnchor(avatar.member.id),
-      w ? [x + w / 2, y + h / 2] : undefined,
+      w ? this.camera.unproject([x + w / 2, y + h / 2]) : undefined,
     ])
     const covered = this.rooms.covered
     this.residents.setCovered(covered)
     hd.setVillagers(this.villagerPlacements(covered), fresh)
     if (!changed) return
-    this.rooms.apply(hd)
+    this.rooms.apply(hd, this.camera.project)
     this.drawnProps = hd.setProps(this.coverProps(covered))
     this.anchorProps()
   }
@@ -318,14 +442,22 @@ export class TownMap {
   /** 道具的点击区和名字跟着立牌走：点击区在立牌中心，名字挂在立牌头顶再高一点 */
   private anchorProps() {
     const up = this.hd ? 1 / this.hd.verticalScale : 1
+    for (const p of this.placed) {
+      const [x, y] = this.camera?.project(p.at) ?? p.at
+      this.scene.props.get(p.id)?.setAttribute('transform', `translate(${x} ${y})`)
+    }
     for (const p of this.drawnProps) {
       // 点击区中心对准立牌中心：立牌底边在 base，向上立起 size（屏幕上按俯角拉回）
-      const centre = p.base - (p.size * up) / 2
-      this.scene.props.get(p.id)?.setAttribute('transform', `translate(${p.x} ${centre})`)
+      const [x, y] = this.camera.project([p.x, p.y])
+      const base = y + p.base - p.y
+      const centre = base - (p.size * up) / 2
+      this.scene.props
+        .get(p.id)
+        ?.setAttribute('transform', `translate(${x} ${centre}) scale(1 ${up})`)
       const label = this.scene.propLabels.get(p.id)
       if (!label) continue
-      label.setAttribute('x', String(p.x))
-      label.setAttribute('y', String(p.base - p.size * up - 18 * this.markerScale * up))
+      label.setAttribute('x', String(x))
+      label.setAttribute('y', String(base - p.size * up - 18 * this.markerScale * up))
       standUpright(label, up)
     }
   }
@@ -432,6 +564,14 @@ export class TownMap {
         })
       }
     }
+    for (const p of this.hd?.decorationObstacles ?? []) {
+      const unit = this.walkUnit
+      obstacles.push({
+        space: OUTDOOR_SPACE,
+        position: [p.x / unit, p.z / unit],
+        half: [p.width / (2 * unit), p.depth / (2 * unit)],
+      })
+    }
     this.routes?.setObstacles(obstacles)
   }
   walkTargetOf(kind: 'person' | 'prop', id: string) {
@@ -451,7 +591,7 @@ export class TownMap {
   private placeDestination() {
     this.destination.style.display = this.destinationAt ? '' : 'none'
     if (!this.destinationAt) return
-    const [x, y] = this.walkPoint(this.destinationAt)
+    const [x, y] = this.camera.project(this.walkPoint(this.destinationAt))
     const s = this.markerScale,
       sy = s * uprightRatio(this.svg)
     this.destination.setAttribute(
@@ -494,6 +634,7 @@ export class TownMap {
       props.filter((p) => p.readable?.kind === 'book').map((p) => [p.id, p.locale])
     )
     this.placed = this.scene.replaceProps(marks, books)
+    this.rememberPropLabels()
     this.rooms.reset()
     this.refreshRooms()
     this.standLabels()
@@ -515,17 +656,21 @@ export class TownMap {
     const box = graphic?.getBBox()
     const matrix = graphic?.transform.baseVal.consolidate()?.matrix
     return box && matrix
-      ? [matrix.e + box.x + box.width / 2, matrix.f + box.y + box.height / 2]
+      ? this.camera.unproject([
+          matrix.e + box.x + box.width / 2,
+          matrix.f + (box.y + box.height / 2) * matrix.d,
+        ])
       : undefined
   }
   locateProp(id: string, locale: string) {
     const shape = this.scene.props.get(id)
     const pos = this.propCenter(id) ?? this.scene.localeAnchor.get(locale)
     if (pos) {
+      const projected = this.camera.project(pos)
       const view = this.camera.getViewBox()
       const width = Math.min(view[2], 1500),
         height = (width * view[3]) / view[2]
-      this.camera.setViewBox([pos[0] - width / 2, pos[1] - height / 2, width, height])
+      this.camera.setViewBox([projected[0] - width / 2, projected[1] - height / 2, width, height])
     }
     this.svg
       .querySelectorAll('.selected-prop')
@@ -550,7 +695,8 @@ export class TownMap {
       matrix = this.svg.getScreenCTM()
     if (!p || !matrix) return
     const [dx, dy] = this.hd?.villagerLag(id) ?? [0, 0]
-    const point = new DOMPoint(p[0] + dx, p[1] + dy).matrixTransform(matrix)
+    const [x, y] = this.camera.project([p[0] + dx, p[1] + dy])
+    const point = new DOMPoint(x, y).matrixTransform(matrix)
     return [point.x, point.y]
   }
   /** 村民在屏幕上的范围：立牌高度按横向缩放折算；平面地图退回头像标记的尺寸 */
@@ -576,10 +722,15 @@ export class TownMap {
     this.camera.panTo(x, y)
   }
   getViewBox() {
-    return this.camera.getViewBox()
+    const [x, y, w, h] = this.camera.getViewBox()
+    const [cx, cy] = this.camera.unproject([x + w / 2, y + h / 2])
+    return [cx - w / 2, cy - h / 2, w, h]
   }
   setViewBox(view: number[]) {
-    this.camera.setViewBox(view)
+    // 公共地图接口仍用世界中心，化身模式和设置面板保存/恢复镜头不需要知道方位角。
+    const [x, y, w, h] = view
+    const [cx, cy] = this.camera.project([x + w / 2, y + h / 2])
+    this.camera.setViewBox([cx - w / 2, cy - h / 2, w, h])
   }
   /** 立体场景的俯角；平面地图没有 */
   /** 地图画质（设定 · 显示） */
@@ -616,7 +767,8 @@ export class TownMap {
     const hd = this.hd
     if (!hd) return
     for (const { member } of this.entries) {
-      const lag = hd.villagerLag(member.id)
+      const worldLag = hd.villagerLag(member.id)
+      const lag = worldLag && this.camera.project(worldLag)
       this.residents.follow(member.id, lag)
       this.bubbles.follow(member.id, lag)
     }

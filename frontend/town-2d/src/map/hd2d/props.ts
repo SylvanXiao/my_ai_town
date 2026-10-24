@@ -81,7 +81,7 @@ export class PropStandees {
   }
 
   private place({ mesh, placement: p }: Standing) {
-    stand(mesh, p.x, p.y + p.size * PROP_BASE, this.tilt)
+    stand(mesh, p.x, p.y, this.tilt, p.size * PROP_BASE)
   }
 
   private remove(id: string) {

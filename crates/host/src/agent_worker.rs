@@ -81,8 +81,30 @@ impl WorkerPool {
 
 /// 发一次村民请求：正文与解析在 agent::completion，这里只走 HTTP。
 pub fn complete(target: &LlmTarget, request: &AgentRequest) -> Result<ModelReply, ModelError> {
-    let body = completion::tool_request_body(request, &target.model);
-    completion::parse_tool_reply(&post_completion(target, &body)?)
+    let local_qwen =
+        target.provider == "ollama" && target.model.to_ascii_lowercase().starts_with("qwen3.5");
+    let mut body = if local_qwen {
+        completion::local_tool_request_body(request, &target.model)
+    } else {
+        completion::tool_request_body(request, &target.model)
+    };
+    // Qwen3.5 的聊天默认 presence_penalty=1.5 会惩罚反复使用同一字段与真实 ID。
+    // 本地村民工具调用采用官方精确任务的采样设置；不改内置模型训练模板或其他服务商。
+    // https://huggingface.co/Qwen/Qwen3.5-2B#best-practices
+    if local_qwen {
+        body["temperature"] = json!(0.6);
+        body["top_p"] = json!(0.95);
+        body["presence_penalty"] = json!(0.0);
+        // 2B 在复杂工具题面下可能把整个输出额度用于思考，留下空正文。
+        // 结构化决策直接输出，再由 Agent 与世界验证；不依靠模型的思考文本执行动作。
+        body["reasoning_effort"] = json!("none");
+    }
+    let response = post_completion(target, &body)?;
+    if local_qwen {
+        completion::parse_local_tool_reply(&response, request)
+    } else {
+        completion::parse_tool_reply(&response)
+    }
 }
 
 /// 仅用于离线接线验收：看一次眼前道具，然后等待；不作为真实模型行为证据。

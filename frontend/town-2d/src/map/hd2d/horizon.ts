@@ -10,7 +10,7 @@ import type { IsletPalette } from '../themes/types'
 // 天幕从下往上是海雾色到天色，下沿有两层远山剪影；靠近海平线的海面和远处的小岛逐渐融进海雾。
 // 主岛四周另散几座远处的小岛，只画在立体场景里，不在地图上，走不过去；废土里它们是干海床上的台地。
 
-/** 片元着色器里按世界坐标 z 往海雾色混：离海平线越近越淡。uHaze 是海雾色，uHorizon/uHazeLen 以世界单位计 */
+/** 按朝向镜头的地面纵深往海雾色混；方位变化时雾和海平线一起转到远方。 */
 const HAZE_HEADER = /* glsl */ `
 uniform vec3 uHaze;
 uniform float uHorizon;
@@ -28,6 +28,7 @@ export interface HazeUniforms {
   uHorizon: { value: number }
   uHazeLen: { value: number }
   uHazeBase: { value: number }
+  uHazeDirection: { value: THREE.Vector2 }
 }
 
 /** 给一个材质接上海雾；base 是不论远近都有的一层淡雾 */
@@ -38,10 +39,10 @@ export function addHaze(
 ) {
   Object.assign(shader.uniforms, haze, { uHazeBase: { value: base } })
   shader.vertexShader =
-    'varying float vHazeZ;\n' +
+    'varying float vHazeZ;\nuniform vec2 uHazeDirection;\n' +
     shader.vertexShader.replace(
       '#include <begin_vertex>',
-      '#include <begin_vertex>\n  vHazeZ = (modelMatrix * vec4(transformed, 1.0)).z;'
+      '#include <begin_vertex>\n  vHazeZ = dot((modelMatrix * vec4(transformed, 1.0)).xz, uHazeDirection);'
     )
   shader.fragmentShader =
     HAZE_HEADER +
@@ -213,7 +214,7 @@ export class Horizon {
   /** box 是主岛（含海岸）在世界坐标里的范围 */
   constructor(
     scene: THREE.Scene,
-    box: { x0: number; z0: number; x1: number; z1: number },
+    private readonly box: { x0: number; z0: number; x1: number; z1: number },
     seed: number,
     private readonly islet: IsletPalette
   ) {
@@ -227,6 +228,7 @@ export class Horizon {
       uHorizon: { value: horizon },
       uHazeLen: { value: (box.z0 - horizon) * 0.75 },
       uHazeBase: { value: 0 },
+      uHazeDirection: { value: new THREE.Vector2(0, 1) },
     }
     this.sky = new THREE.ShaderMaterial({
       vertexShader: SKY_VERTEX,
@@ -253,7 +255,18 @@ export class Horizon {
 
   /** 天幕始终正对镜头：绕下沿按俯角转 */
   setTilt(tilt: Tilt) {
-    this.backdrop.rotation.x = -tilt.pitch
+    const { box } = this
+    const cx = (box.x0 + box.x1) / 2,
+      cz = (box.z0 + box.z1) / 2
+    const depth =
+      Math.abs(tilt.yawSin) * (box.x1 - box.x0) + Math.abs(tilt.yawCos) * (box.z1 - box.z0)
+    const beyond = Math.max(2400, depth * 0.9)
+    const distance = depth / 2 + beyond
+    this.backdrop.position.set(cx - tilt.yawSin * distance, 0, cz - tilt.yawCos * distance)
+    this.backdrop.rotation.set(-tilt.pitch, tilt.yaw, 0, 'YXZ')
+    this.haze.uHazeDirection.value.set(tilt.yawSin, tilt.yawCos)
+    this.haze.uHorizon.value = cx * tilt.yawSin + cz * tilt.yawCos - distance
+    this.haze.uHazeLen.value = beyond * 0.75
   }
 
   /** 极光强度（0 是没有）；场景按夜色和风格设 */

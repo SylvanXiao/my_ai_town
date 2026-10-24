@@ -1,6 +1,5 @@
 import * as THREE from 'three'
 import { EffectComposer } from 'three/addons/postprocessing/EffectComposer.js'
-import { RenderPass } from 'three/addons/postprocessing/RenderPass.js'
 import { UnrealBloomPass } from 'three/addons/postprocessing/UnrealBloomPass.js'
 import { ShaderPass } from 'three/addons/postprocessing/ShaderPass.js'
 import { OutputPass } from 'three/addons/postprocessing/OutputPass.js'
@@ -41,10 +40,12 @@ import {
   wallCanvases,
 } from './textures'
 import { OVERHANG, chimneySpot, gableGeometry, roofHeight, roofParts } from './roofs'
-import { gradeShader, TILT_FOCUS, tiltShader } from './post'
+import { gradeShader, SceneDepthPass, TILT_FOCUS, tiltShader } from './post'
 import { landmarkSprites } from './landmarks'
 import { outerMaterial } from './sea'
 import { Horizon } from './horizon'
+import { RiverAtmosphere } from './riverAtmosphere'
+import { RiverArt } from './riverArt'
 import { ChimneySmoke } from './smoke'
 import { interior, interiorTop, keepInside } from './interior'
 import type { Partition } from './partition'
@@ -59,8 +60,11 @@ import { effectiveQuality, pixelRatioCap, type Quality } from 'town-shared/quali
 
 /** 俯角存在浏览器里，选择地图、建镇预览和游戏共用 */
 const PITCH_KEY = 'town-2d:hd-pitch'
+const YAW_KEY = 'town-2d:hd-yaw'
 /** 右键上下拖动时每个屏幕像素改变的俯角（度） */
 const PITCH_PER_PIXEL = 0.2
+const YAW_PER_PIXEL = 0.3
+const normalizeYaw = (degrees: number) => ((degrees % 360) + 360) % 360
 const smooth = (a: number, b: number, x: number) => {
   const t = Math.max(0, Math.min(1, (x - a) / (b - a)))
   return t * t * (3 - 2 * t)
@@ -93,6 +97,15 @@ function storedPitch() {
   }
 }
 
+function storedYaw() {
+  try {
+    const value = Number(localStorage.getItem(YAW_KEY))
+    return Number.isFinite(value) ? normalizeYaw(value) : 0
+  } catch {
+    return 0
+  }
+}
+
 /** WebGL 渲染器：像素风不抗锯齿，开阴影和色调映射；画布垫在 SVG 下面 */
 function createRenderer(container: HTMLElement, svg: SVGSVGElement) {
   const renderer = new THREE.WebGLRenderer({ antialias: false })
@@ -106,23 +119,27 @@ function createRenderer(container: HTMLElement, svg: SVGSVGElement) {
   return renderer
 }
 
-/** 后期：泛光，横竖两遍移轴模糊，调色，最后输出 */
+/** 后期：保留场景深度，泛光，横竖两遍景深与边缘模糊，调色，最后输出 */
 function createComposer(
   renderer: THREE.WebGLRenderer,
   scene: THREE.Scene,
   camera: THREE.OrthographicCamera
 ) {
   const composer = new EffectComposer(renderer)
-  composer.addPass(new RenderPass(scene, camera))
+  const sceneDepth = new SceneDepthPass(scene, camera)
+  composer.addPass(sceneDepth)
   const bloom = new UnrealBloomPass(new THREE.Vector2(256, 256), 0.5, 0.5, 0.85)
   composer.addPass(bloom)
   const tiltShift = [new ShaderPass(tiltShader), new ShaderPass(tiltShader)]
   tiltShift[1].uniforms.dir.value.set(0, 1)
-  for (const p of tiltShift) composer.addPass(p)
+  for (const p of tiltShift) {
+    p.uniforms.tDepth.value = sceneDepth.depthTexture
+    composer.addPass(p)
+  }
   const grade = new ShaderPass(gradeShader)
   composer.addPass(grade)
   composer.addPass(new OutputPass())
-  return { composer, bloom, tiltShift, grade }
+  return { composer, sceneDepth, bloom, tiltShift, grade }
 }
 
 export class HdScene {
@@ -131,6 +148,7 @@ export class HdScene {
   private readonly scene = new THREE.Scene()
   private readonly camera = new THREE.OrthographicCamera()
   private readonly composer: EffectComposer
+  private readonly sceneDepth: SceneDepthPass
   private readonly bloom: UnrealBloomPass
   private readonly tiltShift: ShaderPass[]
   private readonly grade: ShaderPass
@@ -142,7 +160,8 @@ export class HdScene {
   private readonly rooms = new Map<string, THREE.Group>()
   private readonly partitions = new Map<string, Partition | undefined>()
   private pitchDegrees = storedPitch()
-  private tilt: Tilt = tiltOf(this.pitchDegrees)
+  private yawDegrees = storedYaw()
+  private tilt: Tilt = tiltOf(this.pitchDegrees, this.yawDegrees)
   /** 地面、水面和房子 */
   private readonly flat = new THREE.Group()
   /** 立牌和挂在立牌上的光：俯角变了按这些函数重新摆 */
@@ -167,6 +186,8 @@ export class HdScene {
   /** 海面动画的时间（秒） */
   private readonly seaTime: { value: number }
   private readonly horizon: Horizon
+  private readonly riverAtmosphere: RiverAtmosphere
+  private readonly riverArt: RiverArt
   private readonly observers: { disconnect(): void }[] = []
   private readonly reduceMotion = matchMedia('(prefers-reduced-motion: reduce)')
   private frame = 0
@@ -210,6 +231,11 @@ export class HdScene {
       theme.islet
     )
     this.upright.push((t) => this.horizon.setTilt(t))
+    this.riverAtmosphere = new RiverAtmosphere(this.scene, ground, this.horizon.haze)
+    this.riverArt = new RiverArt(this.scene, ground, () => {
+      this.onDecorationChange?.()
+      this.request()
+    })
     this.scene.add(this.smoke.group)
     this.upright.push((t) => this.smoke.setTilt(t))
     this.seaTime = this.addGround(ground)
@@ -228,6 +254,7 @@ export class HdScene {
     this.setupSun(atlas)
     const post = createComposer(this.renderer, this.scene, this.camera)
     this.composer = post.composer
+    this.sceneDepth = post.sceneDepth
     this.bloom = post.bloom
     this.tiltShift = post.tiltShift
     this.grade = post.grade
@@ -326,6 +353,10 @@ export class HdScene {
     return this.pitchDegrees
   }
 
+  get yaw() {
+    return this.yawDegrees
+  }
+
   /** 地面纵深在屏幕上的压缩比例，SVG 视口按它纵向压扁 */
   get verticalScale() {
     return this.tilt.sin
@@ -342,12 +373,24 @@ export class HdScene {
   }
 
   setPitch(degrees: number) {
-    const next = Math.round(Math.min(PITCH_MAX, Math.max(PITCH_MIN, degrees)))
-    if (next === this.pitchDegrees) return
+    this.setAngles(degrees, this.yawDegrees)
+  }
+
+  setYaw(degrees: number) {
+    this.setAngles(this.pitchDegrees, degrees)
+  }
+
+  private setAngles(pitch: number, yaw: number) {
+    if (!Number.isFinite(pitch) || !Number.isFinite(yaw)) return
+    const next = Math.round(Math.min(PITCH_MAX, Math.max(PITCH_MIN, pitch)))
+    const nextYaw = normalizeYaw(yaw)
+    if (next === this.pitchDegrees && nextYaw === this.yawDegrees) return
     this.pitchDegrees = next
-    this.tilt = tiltOf(next)
+    this.yawDegrees = nextYaw
+    this.tilt = tiltOf(next, nextYaw)
     try {
       localStorage.setItem(PITCH_KEY, String(next))
+      localStorage.setItem(YAW_KEY, String(nextYaw))
     } catch {
       // 存不下就只在这次页面里生效
     }
@@ -376,12 +419,12 @@ export class HdScene {
     this.readView()
   }
 
-  /** 移轴模糊随俯角变：越斜越强，和演示页一致 */
-  /** 画质：像素比上限，低档关掉泛光和移轴模糊 */
+  /** 画质：低档直接画场景，不拷贝深度颜色目标，也关闭泛光和景深模糊 */
   setQuality(quality: Quality) {
     this.renderer.setPixelRatio(Math.min(devicePixelRatio, pixelRatioCap(quality)))
     this.composer.setPixelRatio(this.renderer.getPixelRatio())
     this.bloom.enabled = quality !== 'low'
+    this.sceneDepth.captureDepth = quality !== 'low'
     for (const p of this.tiltShift) p.enabled = quality !== 'low'
     this.resize()
     this.request()
@@ -390,16 +433,28 @@ export class HdScene {
   private updateTiltShift() {
     const pr = this.renderer.getPixelRatio()
     const near = Math.min(1, TILT_SHIFT_VIEW_HEIGHT / this.viewHeight)
-    const amount =
-      lerp(3.2, 1.6, (this.pitchDegrees - PITCH_MIN) / (PITCH_MAX - PITCH_MIN)) * pr * near
+    // 低角度保留前、中、后景层次；转向俯视时逐渐收小离焦，方便读地图与选中人物。
+    const overhead = smooth(52, PITCH_MAX, this.pitchDegrees)
+    const amount = lerp(3.2, 0.35, overhead) * pr * near
     // 清晰带跟着露出来的那块地图走：手机上村民卡盖住下半屏时，上半屏选中的人不糊
     const h = this.container.clientHeight
     const [top, bottom] = this.focusInsets
     const centre = top + Math.max(0, h - top - bottom) / 2
     const focus = h ? TILT_FOCUS + (h / 2 - centre) / h : TILT_FOCUS
+    const depthSpan = (this.viewHeight * this.tilt.cos) / this.tilt.sin
+    const distance = Math.min(
+      this.viewHeight * CAMERA_DISTANCE_PER_VIEW_HEIGHT,
+      MAX_CAMERA_DISTANCE
+    )
     for (const p of this.tiltShift) {
       p.uniforms.amount.value = amount
       p.uniforms.focus.value = focus
+      p.uniforms.depthAmount.value = 2.4 * (1 - overhead) * pr * near
+      p.uniforms.cameraNear.value = this.camera.near
+      p.uniforms.cameraFar.value = this.camera.far
+      p.uniforms.focusDepth.value = distance + (focus - 0.5) * depthSpan
+      p.uniforms.focusRange.value = Math.max(24 * PIXEL, depthSpan * 0.19)
+      p.uniforms.depthFalloff.value = Math.max(48 * PIXEL, depthSpan * 0.3)
     }
   }
 
@@ -419,7 +474,8 @@ export class HdScene {
     const zoom = this.container.querySelector('.map-zoom')
     const box = document.createElement('div')
     box.className = 'map-pitch'
-    box.title = '俯角：往上接近正俯视，往下更斜；也可以在地图上按住右键上下拖动'
+    box.title =
+      '俯角：往上俯瞰全镇，往下看街景；右键拖动可左右旋转、上下调俯角；双击恢复观景角度与方向'
     box.tabIndex = 0
     box.setAttribute('role', 'slider')
     box.setAttribute('aria-label', '俯角')
@@ -464,7 +520,14 @@ export class HdScene {
     )
     for (const type of ['pointerup', 'pointercancel'] as const)
       box.addEventListener(type, (ev) => ev.pointerId === drag?.id && (drag = null), { signal })
-    box.addEventListener('dblclick', (ev) => ev.stopPropagation(), { signal })
+    box.addEventListener(
+      'dblclick',
+      (ev) => {
+        ev.stopPropagation()
+        this.setAngles(DEFAULT_PITCH, 0)
+      },
+      { signal }
+    )
     // 键盘：上下左右一度，翻页五度，Home/End 到两头；用掉的键不再交给化身行走
     const steps: Record<string, number> = {
       ArrowUp: 1,
@@ -496,28 +559,73 @@ export class HdScene {
     else this.container.append(box)
     this.pitchControl = box
 
-    let dragFrom: { y: number; pitch: number } | null = null
+    let dragFrom: { id: number; x: number; y: number; pitch: number; yaw: number } | null = null
+    const stop = (ev?: PointerEvent) => {
+      if (!dragFrom || (ev && ev.pointerId !== dragFrom.id)) return
+      const id = dragFrom.id
+      dragFrom = null
+      this.container.classList.remove('orbit')
+      if (this.container.hasPointerCapture(id)) this.container.releasePointerCapture(id)
+    }
     this.container.addEventListener(
       'pointerdown',
       (ev) => {
-        if (ev.button !== 2) return
-        dragFrom = { y: ev.clientY, pitch: this.pitchDegrees }
-        this.container.setPointerCapture(ev.pointerId)
+        if (ev.button !== 2 || ev.buttons & 1 || dragFrom) return
+        if (
+          (ev.target as Element | null)?.closest(
+            '.map-zoom, button, input, select, textarea, [role="dialog"]'
+          )
+        )
+          return
+        ev.preventDefault()
+        dragFrom = {
+          id: ev.pointerId,
+          x: ev.clientX,
+          y: ev.clientY,
+          pitch: this.pitchDegrees,
+          yaw: this.yawDegrees,
+        }
+        this.container.classList.add('orbit')
+        try {
+          this.container.setPointerCapture(ev.pointerId)
+        } catch {
+          stop()
+        }
       },
       { signal }
     )
     this.container.addEventListener(
       'pointermove',
       (ev) => {
-        // 往上拖看得更斜，往下拖更接近正俯视
-        if (dragFrom) this.setPitch(dragFrom.pitch + (ev.clientY - dragFrom.y) * PITCH_PER_PIXEL)
+        if (!dragFrom || ev.pointerId !== dragFrom.id) return
+        if (!(ev.buttons & 2) || ev.buttons & 1) {
+          stop(ev)
+          return
+        }
+        ev.preventDefault()
+        this.setAngles(
+          dragFrom.pitch + (ev.clientY - dragFrom.y) * PITCH_PER_PIXEL,
+          dragFrom.yaw + (ev.clientX - dragFrom.x) * YAW_PER_PIXEL
+        )
       },
       { signal }
     )
-    const stop = () => (dragFrom = null)
     this.container.addEventListener('pointerup', stop, { signal })
     this.container.addEventListener('pointercancel', stop, { signal })
-    this.container.addEventListener('contextmenu', (ev) => ev.preventDefault(), { signal })
+    this.container.addEventListener('lostpointercapture', stop, { signal })
+    window.addEventListener('blur', () => stop(), { signal })
+    this.container.addEventListener(
+      'contextmenu',
+      (ev) => {
+        if (
+          !(ev.target as Element | null)?.closest(
+            '.map-zoom, button, input, select, textarea, [role="dialog"]'
+          )
+        )
+          ev.preventDefault()
+      },
+      { signal }
+    )
   }
 
   /** 地面贴图挖掉水的像素，下面垫一整块海（废土是干海床），一直铺到地图外很远；返回海面动画的时间 */
@@ -774,6 +882,7 @@ export class HdScene {
     seed: number
   ) {
     const open = terrain.open.slice()
+    this.riverArt.reserve(open, terrain.width)
     this.addLandmarks(atlas, terrain.docks, open, terrain.width, seed)
     this.addScatter(terrain, open, seed)
     return open
@@ -901,6 +1010,13 @@ export class HdScene {
         sy = Math.round(y / PIXEL) * PIXEL
       this.upright.push((t) => stand(mesh, sx, sy, t))
       this.scene.add(mesh)
+      if (!bush)
+        this.riverArt.tree(
+          mesh,
+          sx,
+          sy,
+          (cache.get(key)!.image as HTMLCanvasElement).width * PIXEL * scale
+        )
     }
     for (const v of decor.vegetation) {
       if (v.kind === 'grass' || v.kind === 'flowers') continue
@@ -1011,8 +1127,15 @@ export class HdScene {
   /** 屋里的立牌收到墙内侧，见 keepInside */
   private inside(x: number, y: number, half: number) {
     for (const house of this.houses)
-      x = keepInside(house, this.partitions.get(house.id), x, y, half)
-    return x
+      [x, y] = keepInside(
+        house,
+        this.partitions.get(house.id),
+        x,
+        y,
+        half * Math.abs(this.tilt.yawCos),
+        half * Math.abs(this.tilt.yawSin)
+      )
+    return [x, y] as [number, number]
   }
 
   /** 最近一次的道具立牌，村民用道具时站到它前面 */
@@ -1020,6 +1143,11 @@ export class HdScene {
 
   /** 立牌每帧挪过之后、以及新名册改了目标之后调用：SVG 里的名字和心声泡按 villagerLag 跟上立牌 */
   onVillagersMoved?: () => void
+  onDecorationChange?: () => void
+
+  get decorationObstacles() {
+    return this.riverArt.obstacles
+  }
 
   /** 村民位置；fresh 表示这是新来的一份名册。两份之间由场景自己匀速走过去（见 villagers.ts） */
   setVillagers(placements: VillagerPlacement[], fresh = false) {
@@ -1029,8 +1157,13 @@ export class HdScene {
         const at = this.propPlacements.find(
           (q) => q.visible && Math.hypot(q.x - p.x, q.y - p.y) < 8
         )
-        const y = at ? at.y + at.size * PROP_BASE + 4 : p.y
-        return { ...p, y, x: this.inside(p.x, y, VILLAGER_HALF) }
+        const toward = at ? at.size * PROP_BASE + 4 : 0
+        const [x, y] = this.inside(
+          p.x + toward * this.tilt.yawSin,
+          p.y + toward * this.tilt.yawCos,
+          VILLAGER_HALF
+        )
+        return { ...p, offset: [x - p.x, y - p.y] as [number, number] }
       }),
       fresh
     )
@@ -1049,7 +1182,10 @@ export class HdScene {
    *  base 是底边中点的 y；SVG 层的点击区和名字据此跟着立牌走 */
   setProps(placements: PropPlacement[]) {
     this.propPlacements = placements
-    const drawn = placements.map((p) => ({ ...p, x: this.inside(p.x, p.y, p.size / 2) }))
+    const drawn = placements.map((p) => {
+      const [x, y] = this.inside(p.x, p.y, p.size / 2)
+      return { ...p, x, y }
+    })
     this.props.sync(drawn)
     this.request()
     return drawn.map((p) => ({
@@ -1077,6 +1213,7 @@ export class HdScene {
       night = 1 - smooth(-0.12, 0.1, e)
     const { cloud, overcast, flash } = this.weather
     this.day = day
+    this.riverAtmosphere.setLight(day)
     const golden = Math.max(0, 1 - Math.abs(e - 0.12) / 0.3) * day * (1 - cloud)
     // 太阳在南边（镜头这一侧）偏高处：朝镜头的南墙受光，影子往北落在房子后面；
     // 中午最偏南，早晚偏东西、斜照南墙
@@ -1151,7 +1288,7 @@ export class HdScene {
     if (!vb || vb.length !== 4 || vb.some((v) => !Number.isFinite(v))) return
     const [x, y, w, h] = vb
     const cam = this.camera
-    const { sin, cos } = this.tilt
+    const { sin, cos, yawSin, yawCos } = this.tilt
     // 视口高 h 是地图纵深；镜头倾斜后它在画面上只占 h·sin
     const screenH = h * sin
     Object.assign(cam, {
@@ -1160,20 +1297,24 @@ export class HdScene {
       top: screenH / 2,
       bottom: -screenH / 2,
     })
-    const target = new THREE.Vector3(x + w / 2, 0, y + h / 2)
+    const vx = x + w / 2,
+      vy = y + h / 2
+    const target = new THREE.Vector3(yawCos * vx + yawSin * vy, 0, -yawSin * vx + yawCos * vy)
     this.viewHeight = screenH
     const unitPx = this.renderer.domElement.width / w
     this.motes.setScale(unitPx)
-    this.weather.setView(x + w / 2, y + h / 2, w, h, screenH, unitPx, sin, cos)
-    this.updateTiltShift()
+    this.weather.setView(target.x, target.z, w, h, screenH, unitPx, sin, cos, yawSin, yawCos)
     // 正交镜头的距离不改变画面，只决定雾气：按演示页，视野越大离得越远、雾越浓
     const distance = Math.min(screenH * CAMERA_DISTANCE_PER_VIEW_HEIGHT, MAX_CAMERA_DISTANCE)
     cam.near = -40000
     cam.far = distance + 40000
-    cam.up.set(0, cos, -sin)
-    cam.position.copy(target).add(new THREE.Vector3(0, sin, cos).multiplyScalar(distance))
+    cam.up.set(-yawSin * sin, cos, -yawCos * sin)
+    cam.position
+      .copy(target)
+      .add(new THREE.Vector3(yawSin * cos, sin, yawCos * cos).multiplyScalar(distance))
     cam.lookAt(target)
     cam.updateProjectionMatrix()
+    this.updateTiltShift()
     this.request()
   }
 
@@ -1205,6 +1346,8 @@ export class HdScene {
     this.props.dispose()
     this.pitchControl?.remove()
     this.villagers.dispose()
+    this.riverArt.dispose()
+    this.riverAtmosphere.dispose()
     for (const o of this.observers) o.disconnect()
     this.scene.traverse((o) => {
       // 灯连同阴影贴图（太阳的是 4096×4096）一起释放

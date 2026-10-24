@@ -52,13 +52,39 @@ export class RoomCovers {
   }
 
   /** 开合交给立体场景，房间名跟着屋顶或墙顶的高度走 */
-  apply(hd: HdScene) {
+  apply(hd: HdScene, project: (point: Point) => Point) {
     hd.setOpenRooms(this.open)
     for (const [id, { label, house }] of this.labels) {
-      label.setAttribute(
-        'y',
-        String((this.open.has(id) ? hd.roomTop(house) : hd.roofTop(house)) - 18)
-      )
+      const corners = [
+        [house.x, house.y],
+        [house.x + house.w, house.y],
+        [house.x, house.y + house.h],
+        [house.x + house.w, house.y + house.h],
+      ] as Point[]
+      const view = corners.map(project)
+      const [x] = project([house.x + house.w / 2, house.y + house.h / 2])
+      const rise = this.open.has(id)
+        ? house.y - hd.roomTop(house)
+        : house.y + (house.alongX ? house.h / 2 : 0) - hd.roofTop(house)
+      let top = Math.min(...view.map((p) => p[1])) - rise
+      if (!this.open.has(id)) {
+        const ridge: Point[] = house.alongX
+          ? [
+              [house.x, house.y + house.h / 2],
+              [house.x + house.w, house.y + house.h / 2],
+            ]
+          : [
+              [house.x + house.w / 2, house.y],
+              [house.x + house.w / 2, house.y + house.h],
+            ]
+        const wallRise = (rise * house.wallH) / (house.wallH + house.ridge)
+        top = Math.min(
+          ...view.map((p) => p[1] - wallRise),
+          ...ridge.map((p) => project(p)[1] - rise)
+        )
+      }
+      label.setAttribute('x', String(x))
+      label.setAttribute('y', String(top - 18))
       standUpright(label, 1 / hd.verticalScale)
     }
   }

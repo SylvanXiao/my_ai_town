@@ -19,6 +19,7 @@ logs/
 /dist-island/
 /dist-research/
 /.local/
+/AI小镇启动.exe
 *.log
 
 # --- 密钥 ---
@@ -35,6 +36,7 @@ config/credentials.json
 .wowai/
 /.workbuddy/
 /outputs/
+/output/
 .claude/settings.local.json
 
 # --- 本地研究导出 ---

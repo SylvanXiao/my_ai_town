@@ -37,6 +37,11 @@ export function worldQuery(endpoint, command, predicate, timeout = 5000) {
   })
 }
 const alive = (child) => child.exitCode === null && child.signalCode === null
+// Windows 的 kill('SIGTERM') 会强制结束；关闭 stdin 才会让 host 保存后退出。
+function terminate(child) {
+  if (process.platform === 'win32') child.stdin.end()
+  else child.kill('SIGTERM')
+}
 export class Hosts {
   // mockLlm：host 用固定回复模型启动，供测试使用；maxRunning：同时运行的小镇上限。
   constructor(source, storage, config, { mockLlm = false, maxRunning = MAX_RUNNING } = {}) {
@@ -51,7 +56,7 @@ export class Hosts {
     this.stopping = false
     // 管理进程无论怎样退出，都不留下孤儿 host。
     this.onExit = () => {
-      for (const r of this.running.values()) if (alive(r.child)) r.child.kill('SIGTERM')
+      for (const r of this.running.values()) if (alive(r.child)) terminate(r.child)
     }
     process.on('exit', this.onExit)
   }
@@ -118,6 +123,7 @@ export class Hosts {
       ],
       {
         cwd: this.source,
+        windowsHide: true,
         env: {
           ...process.env,
           AI_TOWN_CONFIG: this.config,
@@ -162,7 +168,7 @@ export class Hosts {
       }
       throw Error('世界启动超时')
     } catch (e) {
-      child.kill('SIGTERM')
+      terminate(child)
       throw e
     }
   }
@@ -204,7 +210,7 @@ export class Hosts {
     this.closing.set(id, pending)
     return pending
   }
-  // 先 SIGTERM 让 host 保存；超时则 SIGKILL 并抛错，让调用方知道保存可能不完整。
+  // 先让 host 保存后退出；超时则 SIGKILL 并抛错，让调用方知道保存可能不完整。
   async finishClose(id) {
     if (this.opening.has(id)) await this.opening.get(id).catch(() => {})
     const r = this.running.get(id)
@@ -214,7 +220,7 @@ export class Hosts {
       if (!alive(r.child)) resolve(true)
       else r.child.once('exit', () => resolve(true))
     })
-    r.child.kill('SIGTERM')
+    terminate(r.child)
     let timer
     const timeout = new Promise((resolve) => {
       timer = setTimeout(() => resolve(false), CLOSE_TIMEOUT_MS)

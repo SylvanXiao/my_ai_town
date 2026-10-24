@@ -6,6 +6,9 @@ use serde::Serialize;
 use serde_json::{json, Value};
 use std::fmt;
 
+mod local;
+pub use local::{local_tool_request_body, parse_local_tool_reply};
+
 /// 一次模型调用失败的原因。村民运行器按种类处理：上下文超长就收紧输入额度重试，其余按失败次数重试。
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum ModelError {

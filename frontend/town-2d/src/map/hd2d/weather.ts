@@ -330,13 +330,20 @@ export class Weather3D {
     screenH: number,
     unitPx: number,
     sin: number,
-    cos: number
+    cos: number,
+    yawSin = 0,
+    yawCos = 1
   ) {
     // 高处落下的雨在画面上往上偏，纵深往镜头一侧多留一段，画面底部也有雨
     const depth = h * 1.3 + (TOP * cos) / sin
+    const toward = (TOP * cos) / sin / 2
     for (const m of this.particles) {
-      m.uniforms.uCenter.value.set(cx, cz + (TOP * cos) / sin / 2)
-      m.uniforms.uSize.value.set(w * 1.3, depth)
+      m.uniforms.uCenter.value.set(cx + toward * yawSin, cz + toward * yawCos)
+      // 粒子仍锚定世界，范围覆盖旋转后视锥的地面包围盒，四个方向都不会露出没有雨雪的边。
+      m.uniforms.uSize.value.set(
+        Math.abs(yawCos) * w * 1.3 + Math.abs(yawSin) * depth,
+        Math.abs(yawSin) * w * 1.3 + Math.abs(yawCos) * depth
+      )
       m.uniforms.uUnitPx.value = unitPx
     }
     // 雨丝长度随视野放大，拉远时仍看得出是雨

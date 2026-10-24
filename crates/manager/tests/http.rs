@@ -64,7 +64,8 @@ impl Manager {
         fs::write(app.join("config/application.json"), config.to_string()).unwrap();
         // 应用带着推理程序，设定里才有内置模型；这里只要文件在，不会真的启动它
         fs::create_dir_all(app.join("builtin-model")).unwrap();
-        fs::write(app.join("builtin-model/llama-server"), "").unwrap();
+        let server = format!("llama-server{}", std::env::consts::EXE_SUFFIX);
+        fs::write(app.join("builtin-model").join(server), "").unwrap();
         fs::write(web.join("index.html"), "<!doctype html>town").unwrap();
         fs::write(web.join("assets/app.js"), "void 0").unwrap();
         let ready = dir.join("ready.json");
