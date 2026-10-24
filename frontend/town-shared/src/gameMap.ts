@@ -52,6 +52,8 @@ export interface GameMap {
   walkTargetOf?(kind: 'person' | 'prop', id: string): WalkTarget | undefined
   /** 绕开障碍的路线；走不到返回 null。没有实现时化身只会直线走。 */
   walkRoute?(from: WalkTarget, to: WalkTarget): WalkStep[] | null
+  /** 键盘和摇杆的画面方向转成世界方向；点击路线已经是世界坐标，不经过这里。 */
+  walkDirection?(direction: [number, number]): [number, number]
   /** 画出或清掉目的地标记 */
   setAvatarDestination?(target: WalkTarget | null): void
   /** 地图俯角（度）；只有 2D 立体场景有，其他地图不实现或返回 undefined */

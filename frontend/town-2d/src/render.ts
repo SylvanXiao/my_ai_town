@@ -60,6 +60,9 @@ export class TownMap {
   private lastRoster?: Extract<ServerMsg, { type: 'roster' }>
   readonly avatarSupported = true
   readonly avatarLooks = avatarLookOptions
+  walkDirection(direction: [number, number]): [number, number] {
+    return this.camera.unproject(direction)
+  }
   private avatarActive = false
   private zoom = 1
   setAvatarActive(active: boolean) {

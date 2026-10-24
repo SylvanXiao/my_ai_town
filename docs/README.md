@@ -67,7 +67,7 @@ node scripts/windows/build-local-launcher.mjs
 
 构建使用 Windows 自带 .NET Framework 的 C# 编译器；运行需要 Node.js 22.18+、`target/debug/host.exe`、`target/debug/town-map.exe` 和已安装的前端依赖。双击后隐藏启动 Ollama 与 5174 端口的小镇服务，等待就绪后打开默认浏览器；前端构建过期时自动重新构建。端口被其他项目或不同存档的服务占用时会报错，不会强制终止进程。此入口使用浏览器，不依赖 WebView2。
 
-本机设置位于被忽略的 `.local/windows-launcher.json`，字段为 `ollamaExe`、`modelDir`、`model`、`dataDir`，路径可相对项目根目录。默认沿用同级 `agentic rl/RAGEN/.runtime/` 内的 Ollama 与模型，模型名 `qwen3.5:2b`，存档 `.local/run-data`；不会下载模型或修改居民的模型绑定。可用环境变量 `AI_TOWN_NODE` 指定 `node.exe`。
+本机设置位于被忽略的 `.local/windows-launcher.json`，字段为 `ollamaExe`、`modelDir`、`model`、`dataDir`，路径可相对项目根目录。默认从 `%LOCALAPPDATA%\Programs\Ollama` 或 `PATH` 查找已安装的 Ollama，沿用它的模型目录（包括 `OLLAMA_MODELS` 环境变量）；便携安装可用前两个字段指定路径。默认模型名 `qwen3.5:2b`，存档 `.local/run-data`；不会下载模型或修改居民的模型绑定。可用环境变量 `AI_TOWN_NODE` 指定 `node.exe`。
 
 启动日志和状态位于 `.local/launcher/`。开发验收可运行 `AI小镇启动.exe --headless --no-browser`，检查退出码、`status.json` 和服务健康接口。启动器退出后后台服务继续运行；结束游玩时先返回「选择小镇」保存并关闭世界。EXE 是本机源码入口，不能脱离项目目录使用，源码更新后可用上面的命令重新生成。
 

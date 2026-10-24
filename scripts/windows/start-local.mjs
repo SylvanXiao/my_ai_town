@@ -31,6 +31,19 @@ async function exists(file) {
   }
 }
 
+async function findOllama(config) {
+  if (config.ollamaExe) return path.resolve(root, config.ollamaExe)
+  const candidates = [
+    process.env.LOCALAPPDATA && path.join(process.env.LOCALAPPDATA, 'Programs/Ollama/ollama.exe'),
+    ...(process.env.PATH ?? '')
+      .split(path.delimiter)
+      .filter(Boolean)
+      .map((directory) => path.join(directory.replace(/^"|"$/g, ''), 'ollama.exe')),
+  ]
+  for (const candidate of candidates) if (candidate && (await exists(candidate))) return candidate
+  throw Error('找不到已安装的 Ollama。请先安装，或在 .local/windows-launcher.json 设置 ollamaExe。')
+}
+
 async function jsonAt(url) {
   try {
     const response = await fetch(url, { signal: AbortSignal.timeout(1500) })
@@ -149,11 +162,10 @@ async function main() {
     if (error.code !== 'ENOENT')
       throw Error('本机启动配置 .local/windows-launcher.json 不是有效 JSON。')
   }
-  const ragen = path.resolve(root, '../agentic rl/RAGEN/.runtime')
   const dataDir = path.resolve(root, config.dataDir ?? '.local/run-data')
   const model = config.model ?? 'qwen3.5:2b'
-  const modelDir = path.resolve(root, config.modelDir ?? path.join(ragen, 'models'))
-  const ollamaExe = path.resolve(root, config.ollamaExe ?? path.join(ragen, 'ollama/ollama.exe'))
+  // 不覆盖系统 Ollama 的模型目录；便携安装可显式指定，已有 OLLAMA_MODELS 也继续生效。
+  const modelDir = config.modelDir ? path.resolve(root, config.modelDir) : undefined
   const host = path.join(root, 'target/debug/host.exe')
   const map = path.join(root, 'target/debug/town-map.exe')
   if (!(await exists(host)) || !(await exists(map)))
@@ -169,14 +181,15 @@ async function main() {
   let ollama
   if (!tags) {
     if (await occupied(11434)) throw Error('11434 端口已被占用，但不是可识别的 Ollama 服务。')
-    if (!(await exists(ollamaExe)) || !(await exists(modelDir)))
+    const ollamaExe = await findOllama(config)
+    if (!(await exists(ollamaExe)) || (modelDir && !(await exists(modelDir))))
       throw Error('找不到 Ollama 或模型目录，请检查 .local/windows-launcher.json 中的路径。')
     console.log('正在启动本地 Ollama…')
     ollama = await startServer(
       ollamaExe,
       ['serve'],
       {
-        OLLAMA_MODELS: modelDir,
+        ...(modelDir ? { OLLAMA_MODELS: modelDir } : {}),
         OLLAMA_HOST: '127.0.0.1:11434',
         OLLAMA_CONTEXT_LENGTH: '32768',
         OLLAMA_NUM_PARALLEL: '1',
